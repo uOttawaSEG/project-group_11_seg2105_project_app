@@ -1,2 +1,9 @@
-# project-group_11_seg2105_project_app
-project-group_11_seg2105_project_app created by GitHub Classroom
+SEG2105 Project Fall 2025
+
+Members:
+
+Mamadou Diallo
+
+Admin:
+Email (username): 
+Password: 
