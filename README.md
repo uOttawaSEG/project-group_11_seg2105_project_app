@@ -4,6 +4,7 @@ Members:
 
 Mamadou Diallo
 Mahdi Hassoun
+Atique Aqtab
 
 Admin:
 Email (username): 
