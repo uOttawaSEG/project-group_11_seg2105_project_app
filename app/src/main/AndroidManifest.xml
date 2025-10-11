@@ -10,16 +10,24 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Group_11_Project_App_SEG2105">
+        android:theme="@style/Theme.Group_11_Project_App_SEG2105"
+        tools:targetApi="31">
+
+        <!-- Login Activity is now launcher -->
         <activity
-            android:name=".MainActivity"
+            android:name=".LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-    </application>
 
+        <!-- Other screens -->
+        <activity android:name=".WelcomeStudentActivity" android:exported="false" />
+        <activity android:name=".WelcomeTutorActivity" android:exported="false" />
+        <activity android:name=".WelcomeAdminActivity" android:exported="false" />
+        <activity android:name=".MainActivity" android:exported="false" />
+
+    </application>
 </manifest>
