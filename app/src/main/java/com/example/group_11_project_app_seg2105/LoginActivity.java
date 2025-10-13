@@ -45,6 +45,9 @@ public class LoginActivity extends AppCompatActivity {
         if(prefill != null) {
             emailField.setText(prefill);
         }
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     }
 
