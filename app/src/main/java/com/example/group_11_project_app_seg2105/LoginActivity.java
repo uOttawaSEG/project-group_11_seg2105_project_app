@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -29,11 +30,24 @@ public class LoginActivity extends AppCompatActivity {
         passwordField = findViewById(R.id.passwordField);
         loginButton = findViewById(R.id.loginButton);
 
-        // Initialize SQLite and seed admin
-        db = new DatabaseHelper(this);
-        db.seedAdmin();
 
-        loginButton.setOnClickListener(this::handleLogin);
+// Initialize SQLite and seed admin
+db = new DatabaseHelper(this);
+db.seedAdmin();
+
+loginButton.setOnClickListener(this::handleLogin);
+
+TextView registerLink = findViewById(R.id.registerLink);
+registerLink.setOnClickListener(v -> {
+    Intent intent = new Intent(LoginActivity.this, RegistrationActivity.class);
+    startActivity(intent);
+});
+
+String prefill = getIntent().getStringExtra("prefill_email");
+if (prefill != null) {
+    emailField.setText(prefill);
+}
+
     }
 
     private void handleLogin(View v) {
