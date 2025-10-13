@@ -1,14 +1,22 @@
 Group 11
 Team Members:
-Mamadou Diallo
-Mahdi Hassoun
-Atique Aqtab
-Kashif Karim
-Zachary Yassine
+Mamadou Diallo, 
+Mahdi Hassoun, 
+Atique Aqtab, 
+Kashif Karim, 
+Zachary Yassine, 
 
 Administrator Account (for testing):
 Email: admin@uottawa.ca
 Password: admin123
+
+Sample Tutor Account:
+Email: tutor@uottawa.ca
+Password: teach123
+
+Sample Student Account:
+Email: student@uottawa.ca
+Password: pass123
 
 How to Run:
 
