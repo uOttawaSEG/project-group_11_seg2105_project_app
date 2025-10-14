@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.group_11_project_app_seg2105.data.DatabaseHelper;
 import com.example.group_11_project_app_seg2105.core.validation.InputValidator;
+import android.util.Log;
 
 /**
  * Handles login for all user roles using SQLite (DatabaseHelper) and InputValidator.
@@ -65,14 +66,21 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         try {
+            // Log start of login process
+            Log.d("DB", "Attempting login for: " + email);
+
             // Validate against database
             boolean valid = db.validateLogin(email, password);
+            Log.d("DB", "Login result: " + valid);
+
             if (!valid) {
                 Toast.makeText(this, "Invalid credentials", Toast.LENGTH_SHORT).show();
                 return;
             }
 
             String role = db.getUserRole(email);
+            Log.d("DB", "Fetched role for " + email + ": " + role);
+
             if (role == null) {
                 Toast.makeText(this, "No role found for account", Toast.LENGTH_SHORT).show();
                 return;
@@ -94,12 +102,13 @@ public class LoginActivity extends AppCompatActivity {
                     return;
             }
 
+            Log.d("DB", "Navigating to: " + next.getComponent().getClassName());
             startActivity(next);
             finish();
 
         } catch (Exception e) {
             Toast.makeText(this, "Login failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
-            android.util.Log.e("LoginActivity", "Login error", e);
+            Log.e("DB", "Login error", e);
         }
     }
 }

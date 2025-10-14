@@ -40,6 +40,10 @@ A demo video showing:
 - Database evidence
 (Video attached in this release)
 
+You can view our Deliverable 1 demo here:  
+[Watch on YouTube](https://youtu.be/BXuadCyc4hg)
+
+
 [View UML Diagram (PDF)](https://github.com/uOttawaSEG/project-group_11_seg2105_project_app/blob/main/UML_Diagram.pdf)
 
 Notes:

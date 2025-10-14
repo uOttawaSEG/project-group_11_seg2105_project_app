@@ -5,6 +5,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
 
 import java.util.Collection;
 
@@ -45,13 +46,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        // User accounts
         db.execSQL("CREATE TABLE " + T_USERS + " (" +
                 C_EMAIL + " TEXT PRIMARY KEY, " +
                 C_PASSWORD + " TEXT NOT NULL, " +
                 C_ROLE + " TEXT NOT NULL)");
 
-        // Student profiles
         db.execSQL("CREATE TABLE " + T_STUDENT_PROFILES + " (" +
                 C_EMAIL + " TEXT PRIMARY KEY, " +
                 C_FIRST + " TEXT, " +
@@ -60,7 +59,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 C_PROGRAM + " TEXT, " +
                 "FOREIGN KEY(" + C_EMAIL + ") REFERENCES " + T_USERS + "(" + C_EMAIL + ") ON DELETE CASCADE)");
 
-        // Tutor profiles
         db.execSQL("CREATE TABLE " + T_TUTOR_PROFILES + " (" +
                 C_EMAIL + " TEXT PRIMARY KEY, " +
                 C_FIRST + " TEXT NOT NULL, " +
@@ -69,14 +67,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 C_DEGREE + " TEXT NOT NULL, " +
                 "FOREIGN KEY(" + C_EMAIL + ") REFERENCES " + T_USERS + "(" + C_EMAIL + ") ON DELETE CASCADE)");
 
-        // Tutor courses (many-to-one)
         db.execSQL("CREATE TABLE " + T_TUTOR_COURSES + " (" +
                 C_EMAIL + " TEXT NOT NULL, " +
                 C_COURSE + " TEXT NOT NULL, " +
                 "PRIMARY KEY (" + C_EMAIL + ", " + C_COURSE + "), " +
                 "FOREIGN KEY(" + C_EMAIL + ") REFERENCES " + T_USERS + "(" + C_EMAIL + ") ON DELETE CASCADE)");
 
-        // Default test users
         db.execSQL("INSERT INTO " + T_USERS + " (" + C_EMAIL + ", " + C_PASSWORD + ", " + C_ROLE + ") VALUES " +
                 "('admin@uottawa.ca','admin123','admin')," +
                 "('student@uottawa.ca','pass123','student')," +
@@ -116,6 +112,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         v.put(C_PASSWORD, password);
         v.put(C_ROLE, role);
         db.insertWithOnConflict(T_USERS, null, v, SQLiteDatabase.CONFLICT_REPLACE);
+        Log.d("DB", "Inserted user: " + email + " | Role: " + role);
         db.close();
     }
 
@@ -124,6 +121,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         Cursor c = db.rawQuery("SELECT 1 FROM " + T_USERS + " WHERE email=? AND password=?",
                 new String[]{email, password});
         boolean ok = c.moveToFirst();
+        Log.d("LOGIN", "Login attempt for " + email + " | Success: " + ok);
         c.close();
         db.close();
         return ok;
@@ -134,6 +132,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         Cursor c = db.rawQuery("SELECT " + C_ROLE + " FROM " + T_USERS + " WHERE email=?",
                 new String[]{email});
         String role = c.moveToFirst() ? c.getString(0) : null;
+        Log.d("DB", "Fetched role for " + email + ": " + role);
         c.close();
         db.close();
         return role;
@@ -142,6 +141,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public void seedAdmin() {
         if (getUserRole("admin@uottawa.ca") == null) {
             saveUser("admin", "admin@uottawa.ca", "admin123");
+            Log.d("DB", "Seeded admin user");
         }
     }
 
@@ -156,6 +156,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             v.put(C_PHONE, phone);
             v.put(C_PROGRAM, program);
             db.insertWithOnConflict(T_STUDENT_PROFILES, null, v, SQLiteDatabase.CONFLICT_REPLACE);
+            Log.d("DB", "Saved student profile for: " + email);
         } finally {
             db.close();
         }
@@ -171,7 +172,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             u.put(C_PASSWORD, password);
             u.put(C_ROLE, "student");
             long userRes = db.insertWithOnConflict(T_USERS, null, u, SQLiteDatabase.CONFLICT_IGNORE);
-            if (userRes == -1) return false;
+            if (userRes == -1) {
+                Log.d("DB", "Failed to create student (duplicate email): " + email);
+                return false;
+            }
 
             ContentValues p = new ContentValues();
             p.put(C_EMAIL, email);
@@ -182,6 +186,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             db.insertWithOnConflict(T_STUDENT_PROFILES, null, p, SQLiteDatabase.CONFLICT_REPLACE);
 
             db.setTransactionSuccessful();
+            Log.d("DB", "Created student with profile: " + email);
             return true;
         } finally {
             db.endTransaction();
@@ -200,7 +205,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             u.put(C_PASSWORD, password);
             u.put(C_ROLE, "tutor");
             long userRes = db.insertWithOnConflict(T_USERS, null, u, SQLiteDatabase.CONFLICT_IGNORE);
-            if (userRes == -1) return false;
+            if (userRes == -1) {
+                Log.d("DB", "Failed to create tutor (duplicate email): " + email);
+                return false;
+            }
 
             ContentValues p = new ContentValues();
             p.put(C_EMAIL, email);
@@ -209,6 +217,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             p.put(C_PHONE, phone);
             p.put(C_DEGREE, degree);
             db.insertWithOnConflict(T_TUTOR_PROFILES, null, p, SQLiteDatabase.CONFLICT_REPLACE);
+            Log.d("DB", "Created tutor profile for: " + email);
 
             if (courses != null) {
                 for (String c : courses) {
@@ -216,10 +225,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     row.put(C_EMAIL, email);
                     row.put(C_COURSE, c);
                     db.insertWithOnConflict(T_TUTOR_COURSES, null, row, SQLiteDatabase.CONFLICT_IGNORE);
+                    Log.d("DB", "Added tutor course: " + c + " for " + email);
                 }
             }
 
             db.setTransactionSuccessful();
+            Log.d("DB", "Created tutor with all data: " + email);
             return true;
         } finally {
             db.endTransaction();
@@ -248,12 +259,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public StudentProfile getStudentProfile(String email) {
         SQLiteDatabase db = getReadableDatabase();
         Cursor c = db.rawQuery("SELECT " + C_FIRST + ", " + C_LAST + ", " + C_PHONE + ", " + C_PROGRAM +
-                " FROM " + T_STUDENT_PROFILES + " WHERE " + C_EMAIL + "=?",
+                        " FROM " + T_STUDENT_PROFILES + " WHERE " + C_EMAIL + "=?",
                 new String[]{email});
         try {
             if (c.moveToFirst()) {
+                Log.d("DB", "Fetched student profile for: " + email);
                 return new StudentProfile(email, c.getString(0), c.getString(1), c.getString(2), c.getString(3));
             }
+            Log.d("DB", "No student profile found for: " + email);
             return null;
         } finally {
             c.close();
