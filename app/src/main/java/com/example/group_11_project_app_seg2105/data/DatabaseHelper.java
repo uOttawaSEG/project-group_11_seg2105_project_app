@@ -6,12 +6,16 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import java.util.Collection;
+
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DB_NAME = "otams.db";
-    private static final int DB_VERSION = 2;
+    private static final int DB_VERSION = 3;
 
     private static final String T_USERS = "users";
     private static final String T_STUDENT_PROFILES = "student_profiles"; // added a profiles table to store personal data
+    private static final String T_TUTOR_PROFILES = "tutor_profiles";
+    private static final String T_TUTOR_COURSES = "tutor_courses";
     private static final String C_EMAIL = "email";
     private static final String C_PASSWORD = "password";
     private static final String C_ROLE = "role";
@@ -20,6 +24,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String C_LAST = "last_name";
     private static final String C_PHONE = "phone";
     private static final String C_PROGRAM = "program";
+
+    private static final String C_DEGREE = "degree";
+    private static final String C_COURSE = "course";
 
     public DatabaseHelper(Context context) { super(context, DB_NAME, null, DB_VERSION); }
 
@@ -41,6 +48,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 C_LAST + "TEXT, " +
                 C_PHONE + "TEXT, " +
                 C_PROGRAM + "TEXT, " +
+                "FOREIGN KEY(" + C_EMAIL + ") REFERENCES " + T_USERS + "(" + C_EMAIL + ") ON DELETE CASCADE)");
+
+        db.execSQL("CREATE TABLE " + T_TUTOR_PROFILES + " (" +
+                C_EMAIL + " TEXT PRIMARY KEY, " +
+                C_FIRST + " TEXT NOT NULL, " +
+                C_LAST  + " TEXT NOT NULL, " +
+                C_PHONE + " TEXT NOT NULL, " +
+                C_DEGREE + " TEXT NOT NULL, " +
+                "FOREIGN KEY(" + C_EMAIL + ") REFERENCES " + T_USERS + "(" + C_EMAIL + ") ON DELETE CASCADE)");
+
+        db.execSQL("CREATE TABLE " + T_TUTOR_COURSES + " (" +
+                C_EMAIL + " TEXT NOT NULL, " +
+                C_COURSE + " TEXT NOT NULL, " +
+                "PRIMARY KEY (" + C_EMAIL + ", " + C_COURSE + "), " +
                 "FOREIGN KEY(" + C_EMAIL + ") REFERENCES " + T_USERS + "(" + C_EMAIL + ") ON DELETE CASCADE)");
 
 
@@ -67,6 +88,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     C_PROGRAM + "TEXT NOT NULL, " +
                     "FOREIGN KEY(" + C_EMAIL + ") REFERENCES " + T_USERS +"(" + C_EMAIL + ") ON DELETE CASCADE )");
         }
+        if(oldV < 3) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS " + T_TUTOR_PROFILES + " (" +
+                    C_EMAIL + " TEXT PRIMARY KEY, " +
+                    C_FIRST + " TEXT NOT NULL, " +
+                    C_LAST  + " TEXT NOT NULL, " +
+                    C_PHONE + " TEXT NOT NULL," +
+                    C_DEGREE + " TEXT NOT NULL, " +
+                    "FOREIGN KEY(" + C_EMAIL + ") REFERENCES " + T_USERS + "(" + C_EMAIL + ") ON DELETE CASCADE)");
+        }
     }
 
     public void saveUser(String role, String email, String password) {
@@ -76,28 +106,23 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         v.put(C_PASSWORD, password);
         v.put(C_ROLE, role);
         db.insertWithOnConflict(T_USERS, null, v, SQLiteDatabase.CONFLICT_REPLACE);
-        db.close();
     }
 
     public boolean validateLogin(String email, String password) {
         SQLiteDatabase db = getReadableDatabase();
         Cursor c = db.rawQuery("SELECT 1 FROM " + T_USERS + " WHERE email=? AND password=?",
                 new String[]{email, password});
-        boolean ok = c.moveToFirst();
-        c.close();
-        db.close();
-        return ok;
+        return c.moveToFirst();
     }
 
     public String getUserRole(String email) {
-        SQLiteDatabase db = getReadableDatabase();
-        Cursor c = db.rawQuery("SELECT " + C_ROLE + " FROM " + T_USERS + " WHERE email=?",
-                new String[]{email});
-        String role = c.moveToFirst() ? c.getString(0) : null;
-        c.close();
-        db.close();
-        return role;
+        try(SQLiteDatabase db = getReadableDatabase();
+            Cursor c = db.rawQuery("SELECT " + C_ROLE + " FROM " + T_USERS + " WHERE email=?",
+                    new String[]{email})) {
+            return c.moveToFirst() ? c.getString(0) : null;
+        }
     }
+
 
     public void seedAdmin() {
         if (getUserRole("admin@uottawa.ca") == null) {
@@ -149,6 +174,40 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             db.close();
         }
     }
+
+    public boolean createTutorWithProfile(String email, String password, String first, String last, String phone, String degree, Collection<String> courses) {
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            ContentValues u = new ContentValues();
+            u.put(C_EMAIL, email);
+            u.put(C_PASSWORD, password);
+            u.put(C_ROLE, "tutor");
+            long userRes = db.insertWithOnConflict(T_USERS, null, u, SQLiteDatabase.CONFLICT_IGNORE);
+            if(userRes == -1) {
+                return false;
+            }
+
+            if(courses != null) {
+                for(String c : courses) {
+                    ContentValues row = new ContentValues();
+                    row.put(C_EMAIL, email);
+                    row.put(C_COURSE, c);
+                    db.insertWithOnConflict(T_TUTOR_COURSES, null, row, SQLiteDatabase.CONFLICT_IGNORE);
+                }
+
+            }
+
+            db.setTransactionSuccessful();
+            return true;
+        } finally {
+            db.endTransaction();
+            db.close();
+        }
+
+
+    }
+
 
     public static class StudentProfile {
         public final String email;

@@ -3,6 +3,8 @@ package com.example.group_11_project_app_seg2105;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -29,6 +31,26 @@ public class RegistrationActivity extends AppCompatActivity{
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_student_registration);
 
+        AutoCompleteTextView titleDropdown = findViewById(R.id.titleDropdown);
+        if(titleDropdown != null) {
+            ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.registration_roles_title, android.R.layout.simple_dropdown_item_1line);
+            titleDropdown.setAdapter(adapter);
+            titleDropdown.setOnClickListener(v -> titleDropdown.showDropDown());
+            titleDropdown.setOnItemClickListener((parent, view, position, id) -> {
+                String selected = parent.getItemAtPosition(position).toString();
+                if (selected.toLowerCase().contains("tutor")) {
+                    startActivity(new Intent(this, TutorRegistrationActivity.class));
+                    finish();
+
+                } else {
+                    titleDropdown.setText("Student Registration", false);
+                }
+            });
+
+        }
+
+
+        // Initialize fields
 
         firstNameField = findViewById(R.id.firstNameField);
         lastNameField = findViewById(R.id.lastNameField);
@@ -43,7 +65,7 @@ public class RegistrationActivity extends AppCompatActivity{
         db = new DatabaseHelper(this);
         db.seedAdmin();
 
-        registerButton.setOnClickListener(this::handleRegister);
+        registerButton.setOnClickListener(v -> handleRegister());
 
         TextView loginLink = findViewById(R.id.loginLink);
         loginLink.setOnClickListener(v -> {
@@ -54,7 +76,10 @@ public class RegistrationActivity extends AppCompatActivity{
         });
     }
 
-    private void handleRegister(View v) {
+    private void handleRegister() {
+        if(emailField == null || passwordField == null) {
+            Toast.makeText(this, "Layout mismatch: fields not found", Toast.LENGTH_SHORT).show();
+        }
 
         clearAllFieldErrors();
 
