@@ -2,24 +2,25 @@ package com.example.group_11_project_app_seg2105;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.group_11_project_app_seg2105.data.DatabaseHelper;
+import com.example.group_11_project_app_seg2105.core.validation.InputValidator;
 
 /**
- * Handles login for all user roles.
- * Admin credentials are hardcoded:
- * admin@uottawa.ca / admin123
+ * Handles login for all user roles using SQLite (DatabaseHelper) and InputValidator.
+ * Combines both versions' logic while keeping all functionality required by Deliverable 1.
  */
 public class LoginActivity extends AppCompatActivity {
 
     private EditText emailField, passwordField;
     private Button loginButton;
     private DatabaseHelper db;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,79 +35,71 @@ public class LoginActivity extends AppCompatActivity {
         db = new DatabaseHelper(this);
         db.seedAdmin();
 
-<<<<<<< Updated upstream
-        loginButton.setOnClickListener(v -> handleLogin());
-
-        // Initialize SQLite and seed admin
-        db = new DatabaseHelper(this);
-        db.seedAdmin();
-
-
+        // Registration link
         TextView registerLink = findViewById(R.id.registerLink);
         if (registerLink != null) {
-            registerLink.setOnClickListener(v ->
-                    startActivity(new Intent(LoginActivity.this, RegistrationActivity.class)));
+            registerLink.setOnClickListener(v -> {
+                Intent intent = new Intent(LoginActivity.this, RegistrationActivity.class);
+                startActivity(intent);
+            });
         }
 
+        // Prefill email if passed from RegistrationActivity
         String prefill = getIntent().getStringExtra("prefill_email");
-        if(prefill != null) {
+        if (prefill != null) {
             emailField.setText(prefill);
         }
 
-        loginButton.setOnClickListener(v -> handleLogin());
-
-=======
+        // Handle login button click
         loginButton.setOnClickListener(this::handleLogin);
->>>>>>> Stashed changes
     }
 
-    private void handleLogin() {
+    private void handleLogin(View v) {
         String email = emailField != null ? emailField.getText().toString().trim() : "";
         String password = passwordField != null ? passwordField.getText().toString().trim() : "";
 
-
-        boolean hasErr = false;
-        if (email.isEmpty()) { if (emailField != null) emailField.setError("Email required"); hasErr = true; }
-        if (password.isEmpty()) { if (passwordField != null) passwordField.setError("Password required"); hasErr = true; }
-        if (hasErr) { Toast.makeText(this, "Please enter both fields", Toast.LENGTH_SHORT).show(); return; }
-
-
-        // Hardcoded admin account
-        if (email.equals("admin@uottawa.ca") && password.equals("admin123")) {
-            startActivity(new Intent(this, WelcomeAdminActivity.class));
-            finish();
+        // Simple field validation
+        if (!InputValidator.isValidEmail(email) || !InputValidator.isValidPassword(password)) {
+            Toast.makeText(this, "Invalid email or password format", Toast.LENGTH_SHORT).show();
             return;
         }
 
-
         try {
-            if (db == null) db = new DatabaseHelper(this);
-
-            boolean ok = db.validateLogin(email, password);
-            if (!ok) { Toast.makeText(this, "Invalid credentials", Toast.LENGTH_SHORT).show(); return; }
+            // Validate against database
+            boolean valid = db.validateLogin(email, password);
+            if (!valid) {
+                Toast.makeText(this, "Invalid credentials", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
             String role = db.getUserRole(email);
-            if (role == null) { Toast.makeText(this, "Account has no role set.", Toast.LENGTH_SHORT).show(); return; }
+            if (role == null) {
+                Toast.makeText(this, "No role found for account", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
             Intent next;
             switch (role.toLowerCase()) {
-                case "admin":   next = new Intent(this, WelcomeAdminActivity.class); break;
-                case "tutor":   next = new Intent(this, WelcomeTutorActivity.class); break;
-                case "student": next = new Intent(this, WelcomeStudentActivity.class); break;
-                default:        Toast.makeText(this, "Unknown role: " + role, Toast.LENGTH_SHORT).show(); return;
+                case "admin":
+                    next = new Intent(this, WelcomeAdminActivity.class);
+                    break;
+                case "tutor":
+                    next = new Intent(this, WelcomeTutorActivity.class);
+                    break;
+                case "student":
+                    next = new Intent(this, WelcomeStudentActivity.class);
+                    break;
+                default:
+                    Toast.makeText(this, "Unknown role: " + role, Toast.LENGTH_SHORT).show();
+                    return;
             }
+
             startActivity(next);
             finish();
 
         } catch (Exception e) {
-            // Show the underlying cause instead of crashing
-            String msg = e.getMessage();
-            Toast.makeText(this, "Login failed: " + (msg == null ? e.getClass().getSimpleName() : msg), Toast.LENGTH_LONG).show();
-            android.util.Log.e("LoginActivity", "Login crash", e);
+            Toast.makeText(this, "Login failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            android.util.Log.e("LoginActivity", "Login error", e);
         }
     }
-
 }
-
-
-

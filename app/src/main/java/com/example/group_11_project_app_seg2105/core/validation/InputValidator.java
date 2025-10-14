@@ -5,10 +5,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * Utility class for validating registration and login inputs.
+ * Merged from both versions without losing functionality.
+ */
 public class InputValidator {
 
-
-
+    // --- Basic field checks ---
     public static boolean isNonEmpty(String s) {
         return s != null && !s.trim().isEmpty();
     }
@@ -21,17 +24,22 @@ public class InputValidator {
         return s != null && s.length() >= 6;
     }
 
-    public static boolean isValidConfirmPassword(String s, String p) { return s!= null && s.equals(p); }
+    public static boolean isValidConfirmPassword(String s, String p) {
+        return s != null && s.equals(p);
+    }
 
     public static boolean isNumericPhone(String s) {
         return s != null && s.matches("\\d+");
     }
 
-    public static List<String> validateStudent(String fName, String lName, String email, String password, String confirmPassword,String phone, String program) {
+    // --- Student validation ---
+    public static List<String> validateStudent(String fName, String lName, String email,
+                                               String password, String confirmPassword,
+                                               String phone, String program) {
         List<String> errors = new ArrayList<>();
 
-        if(!isNonEmpty(fName)) errors.add("First Name is required");
-        if(!isNonEmpty(lName)) errors.add("Last name is required");
+        if (!isNonEmpty(fName)) errors.add("First name is required");
+        if (!isNonEmpty(lName)) errors.add("Last name is required");
         if (!isValidEmail(email)) errors.add("Invalid email");
         if (!isValidPassword(password)) errors.add("Password must be at least 6 characters");
         if (!isNumericPhone(phone)) errors.add("Phone must be digits only");
@@ -41,11 +49,15 @@ public class InputValidator {
         return errors;
     }
 
-    public static List<String> validateTutor(String fName, String lName, String email, String password, String confirmPassword, String phone, String degree, Collection<String> courses) {
+    // --- Tutor validation ---
+    public static List<String> validateTutor(String fName, String lName, String email,
+                                             String password, String confirmPassword,
+                                             String phone, String degree,
+                                             Collection<String> courses) {
         List<String> errors = new ArrayList<>();
 
-        if(!isNonEmpty(fName)) errors.add("First Name is required");
-        if(!isNonEmpty(lName)) errors.add("Last name is required");
+        if (!isNonEmpty(fName)) errors.add("First name is required");
+        if (!isNonEmpty(lName)) errors.add("Last name is required");
         if (!isValidEmail(email)) errors.add("Invalid email");
         if (!isValidPassword(password)) errors.add("Password must be at least 6 characters");
         if (!isNumericPhone(phone)) errors.add("Phone must be digits only");
@@ -55,6 +67,4 @@ public class InputValidator {
 
         return errors;
     }
-
-
 }
