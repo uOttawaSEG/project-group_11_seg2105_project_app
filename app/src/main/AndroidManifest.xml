@@ -28,6 +28,12 @@
             android:exported="false"
             android:windowSoftInputMode="stateHidden|adjustResize"/>
 
+        <activity
+            android:name=".TutorRegistrationActivity"
+            android:exported="false"
+            android:windowSoftInputMode="stateHidden|adjustResize"/>
+
+
         <!-- Other screens -->
         <activity android:name=".WelcomeStudentActivity" android:exported="false" />
         <activity android:name=".WelcomeTutorActivity" android:exported="false" />

@@ -14,6 +14,7 @@ import com.example.group_11_project_app_seg2105.core.validation.InputValidator;
 
 /**
  * Handles login for all user roles using SQLite (DatabaseHelper) and InputValidator.
+ * Combines both versions' logic while keeping all functionality required by Deliverable 1.
  */
 public class LoginActivity extends AppCompatActivity {
 
@@ -30,54 +31,75 @@ public class LoginActivity extends AppCompatActivity {
         passwordField = findViewById(R.id.passwordField);
         loginButton = findViewById(R.id.loginButton);
 
+        // Initialize SQLite and seed admin
+        db = new DatabaseHelper(this);
+        db.seedAdmin();
 
-// Initialize SQLite and seed admin
-db = new DatabaseHelper(this);
-db.seedAdmin();
+        // Registration link
+        TextView registerLink = findViewById(R.id.registerLink);
+        if (registerLink != null) {
+            registerLink.setOnClickListener(v -> {
+                Intent intent = new Intent(LoginActivity.this, RegistrationActivity.class);
+                startActivity(intent);
+            });
+        }
 
-loginButton.setOnClickListener(this::handleLogin);
+        // Prefill email if passed from RegistrationActivity
+        String prefill = getIntent().getStringExtra("prefill_email");
+        if (prefill != null) {
+            emailField.setText(prefill);
+        }
 
-TextView registerLink = findViewById(R.id.registerLink);
-registerLink.setOnClickListener(v -> {
-    Intent intent = new Intent(LoginActivity.this, RegistrationActivity.class);
-    startActivity(intent);
-});
-
-String prefill = getIntent().getStringExtra("prefill_email");
-if (prefill != null) {
-    emailField.setText(prefill);
-}
-
+        // Handle login button click
+        loginButton.setOnClickListener(this::handleLogin);
     }
 
     private void handleLogin(View v) {
-        String email = emailField.getText().toString().trim();
-        String password = passwordField.getText().toString().trim();
+        String email = emailField != null ? emailField.getText().toString().trim() : "";
+        String password = passwordField != null ? passwordField.getText().toString().trim() : "";
 
-        // Validate input
+        // Simple field validation
         if (!InputValidator.isValidEmail(email) || !InputValidator.isValidPassword(password)) {
             Toast.makeText(this, "Invalid email or password format", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Validate against SQLite DB
-        if (db.validateLogin(email, password)) {
-            String role = db.getUserRole(email);
-
-            if ("admin".equalsIgnoreCase(role)) {
-                startActivity(new Intent(this, WelcomeAdminActivity.class));
-            } else if ("tutor".equalsIgnoreCase(role)) {
-                startActivity(new Intent(this, WelcomeTutorActivity.class));
-            } else if ("student".equalsIgnoreCase(role)) {
-                startActivity(new Intent(this, WelcomeStudentActivity.class));
-            } else {
-                Toast.makeText(this, "Unknown role", Toast.LENGTH_SHORT).show();
+        try {
+            // Validate against database
+            boolean valid = db.validateLogin(email, password);
+            if (!valid) {
+                Toast.makeText(this, "Invalid credentials", Toast.LENGTH_SHORT).show();
                 return;
             }
 
+            String role = db.getUserRole(email);
+            if (role == null) {
+                Toast.makeText(this, "No role found for account", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            Intent next;
+            switch (role.toLowerCase()) {
+                case "admin":
+                    next = new Intent(this, WelcomeAdminActivity.class);
+                    break;
+                case "tutor":
+                    next = new Intent(this, WelcomeTutorActivity.class);
+                    break;
+                case "student":
+                    next = new Intent(this, WelcomeStudentActivity.class);
+                    break;
+                default:
+                    Toast.makeText(this, "Unknown role: " + role, Toast.LENGTH_SHORT).show();
+                    return;
+            }
+
+            startActivity(next);
             finish();
-        } else {
-            Toast.makeText(this, "Invalid credentials", Toast.LENGTH_SHORT).show();
+
+        } catch (Exception e) {
+            Toast.makeText(this, "Login failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            android.util.Log.e("LoginActivity", "Login error", e);
         }
     }
 }
