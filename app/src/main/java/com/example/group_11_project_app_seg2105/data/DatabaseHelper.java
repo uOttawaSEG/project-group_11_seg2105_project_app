@@ -10,6 +10,7 @@ import java.util.Collection;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DB_NAME = "otams.db";
+<<<<<<< Updated upstream
     private static final int DB_VERSION = 3;
 
     private static final String T_USERS = "users";
@@ -34,6 +35,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         super.onConfigure(db);
         db.setForeignKeyConstraintsEnabled(true);
     }
+=======
+    private static final int DB_VERSION = 1;
+
+    private static final String T_USERS = "users";
+    private static final String C_EMAIL = "email";
+    private static final String C_PASSWORD = "password";
+    private static final String C_ROLE = "role";
+
+    public DatabaseHelper(Context context) { super(context, DB_NAME, null, DB_VERSION); }
+>>>>>>> Stashed changes
 
     @Override
     public void onCreate(SQLiteDatabase db) {
@@ -42,6 +53,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 C_PASSWORD + " TEXT, " +
                 C_ROLE + " TEXT)");
 
+<<<<<<< Updated upstream
         db.execSQL("CREATE TABLE " + T_STUDENT_PROFILES + " (" +
                 C_EMAIL + " TEXT PRIMARY KEY, " +
                 C_FIRST + "TEXT, " +
@@ -65,20 +77,26 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 "FOREIGN KEY(" + C_EMAIL + ") REFERENCES " + T_USERS + "(" + C_EMAIL + ") ON DELETE CASCADE)");
 
 
+=======
+>>>>>>> Stashed changes
         // Add test users (for quick testing)
         db.execSQL("INSERT INTO " + T_USERS +
                 " (" + C_EMAIL + ", " + C_PASSWORD + ", " + C_ROLE + ") VALUES " +
                 "('admin@uottawa.ca','admin123','admin')," +
                 "('student@uottawa.ca','pass123','student')," +
                 "('tutor@uottawa.ca','teach123','tutor');");
+<<<<<<< Updated upstream
 
         db.execSQL("INSERT INTO " + T_STUDENT_PROFILES +
                 " (" + C_EMAIL + ", " + C_FIRST + ", " + C_LAST + ") VALUES " +
                 "('admin@uottawa.ca', 'Admin', 'User');");
+=======
+>>>>>>> Stashed changes
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldV, int newV) {
+<<<<<<< Updated upstream
         if(oldV < 2) {
             db.execSQL("CREATE TABLE IF NOT EXISTS " + T_STUDENT_PROFILES + " (" +
                     C_EMAIL + " TEXT PRIMARY KEY, " +
@@ -97,6 +115,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     C_DEGREE + " TEXT NOT NULL, " +
                     "FOREIGN KEY(" + C_EMAIL + ") REFERENCES " + T_USERS + "(" + C_EMAIL + ") ON DELETE CASCADE)");
         }
+=======
+        db.execSQL("DROP TABLE IF EXISTS " + T_USERS);
+        onCreate(db);
+>>>>>>> Stashed changes
     }
 
     public void saveUser(String role, String email, String password) {
@@ -129,6 +151,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             saveUser("admin", "admin@uottawa.ca", "admin123");
         }
     }
+<<<<<<< Updated upstream
 
     public void saveStudentProfile(String email, String first, String last, String phone, String program) {
         SQLiteDatabase db = getWritableDatabase();
@@ -246,4 +269,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
 
+=======
+>>>>>>> Stashed changes
 }
