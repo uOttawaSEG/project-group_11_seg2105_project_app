@@ -4,7 +4,8 @@ Mamadou Diallo,
 Mahdi Hassoun, 
 Atique Aqtab, 
 Kashif Karim, 
-Zachary Yassine, 
+Zachary Yassine,
+Eren Arikan
 
 Administrator Account (for testing):
 Email: admin@uottawa.ca
