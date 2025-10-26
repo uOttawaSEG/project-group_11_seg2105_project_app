@@ -99,6 +99,7 @@ public class TutorRegistrationActivity extends AppCompatActivity {
         db = new DatabaseHelper(this);
         db.seedAdmin();
 
+
         if (courseInputLayout != null) {
             courseInputLayout.setEndIconOnClickListener(v ->
                     addCourseFromInput());

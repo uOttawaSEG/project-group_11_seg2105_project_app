@@ -9,6 +9,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.group_11_project_app_seg2105.admin.RejectedRequestsActivity;
 import com.example.group_11_project_app_seg2105.data.DatabaseHelper;
 import com.example.group_11_project_app_seg2105.core.validation.InputValidator;
 import android.util.Log;
@@ -89,7 +90,7 @@ public class LoginActivity extends AppCompatActivity {
             Intent next;
             switch (role.toLowerCase()) {
                 case "admin":
-                    next = new Intent(this, WelcomeAdminActivity.class);
+                    next = new Intent(this, RejectedRequestsActivity.class);
                     break;
                 case "tutor":
                     next = new Intent(this, WelcomeTutorActivity.class);
