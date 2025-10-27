@@ -95,8 +95,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             cursor.close();
         }
         long now = System.currentTimeMillis();
+
         insertReg(db, "student@uottawa.ca", RegistrationStatus.REJECTED, now - 86_400_000L, "Rejected student reason");
         insertReg(db, "tutor@uottawa.ca", RegistrationStatus.REJECTED, now - 43_200_000L, "Rejected tutor reason");
+        insertReg(db, "pending_tutor@uottawa.ca", RegistrationStatus.PENDING, System.currentTimeMillis(), null);
+        insertReg(db, "pending_student@uottawa.ca", RegistrationStatus.PENDING, System.currentTimeMillis(), null);
     }
 
     private void insertReg(SQLiteDatabase db, String email, RegistrationStatus status, long createdAt, String reason) {
@@ -293,4 +296,48 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             cursor.close();
         }
     }
+    // --- Admin Inbox Methods ---
+    public ArrayList<RegistrationRequest> getPendingRequests() {
+        SQLiteDatabase db = getReadableDatabase();
+        String sql =
+                "SELECT r." + R_ID + ", " +
+                        "r." + R_EMAIL + ", " +
+                        "COALESCE(s." + C_FIRST + ", t." + C_FIRST + ") AS first_name, " +
+                        "COALESCE(s." + C_LAST + ", t." + C_LAST + ") AS last_name, " +
+                        "u." + C_ROLE + ", " +
+                        "r." + R_STATUS + ", " +
+                        "r." + R_REASON + " " +
+                        "FROM " + T_REG_REQUESTS + " r " +
+                        "LEFT JOIN " + T_USERS + " u ON r." + R_EMAIL + " = u." + C_EMAIL + " " +
+                        "LEFT JOIN " + T_STUDENT_PROFILES + " s ON r." + R_EMAIL + " = s." + C_EMAIL + " " +
+                        "LEFT JOIN " + T_TUTOR_PROFILES + " t ON r." + R_EMAIL + " = t." + C_EMAIL + " " +
+                        "WHERE r." + R_STATUS + " = 'PENDING' " +
+                        "ORDER BY r." + R_CREATED_AT + " DESC";
+
+        ArrayList<RegistrationRequest> out = new ArrayList<>();
+
+        try (Cursor c = db.rawQuery(sql, null)) {
+            while (c.moveToNext()) {
+                long id = c.getLong(0);
+                String email = c.getString(1);
+                String first = c.isNull(2) ? "" : c.getString(2);
+                String last = c.isNull(3) ? "" : c.getString(3);
+                String role = c.isNull(4) ? "" : c.getString(4);
+                String status = c.getString(5);
+                String reason = c.isNull(6) ? "" : c.getString(6);
+
+                out.add(new RegistrationRequest(id, email, first, last, role, status, reason));
+            }
+        }
+        return out;
+    }
+
+    public void updateRequestStatus(String email, String newStatus) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put(R_STATUS, newStatus);
+        cv.put(R_DECIDED_AT, System.currentTimeMillis());
+        db.update(T_REG_REQUESTS, cv, R_EMAIL + "=?", new String[]{email});
+    }
+
 }
