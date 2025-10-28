@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Permission required for sending email intents -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -21,31 +24,27 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
         </activity>
 
-
-
+        <!-- Registration screens -->
         <activity
             android:name=".RegistrationActivity"
             android:exported="false"
-            android:windowSoftInputMode="stateHidden|adjustResize"/>
-
+            android:windowSoftInputMode="stateHidden|adjustResize" />
         <activity
             android:name=".TutorRegistrationActivity"
             android:exported="false"
-            android:windowSoftInputMode="stateHidden|adjustResize"/>
+            android:windowSoftInputMode="stateHidden|adjustResize" />
 
-
-        <!-- Other screens -->
+        <!-- Role-based welcome screens -->
         <activity android:name=".WelcomeStudentActivity" android:exported="false" />
         <activity android:name=".WelcomeTutorActivity" android:exported="false" />
         <activity android:name=".WelcomeAdminActivity" android:exported="false" />
         <activity android:name=".MainActivity" android:exported="false" />
 
-        <!-- Admin -->
+        <!-- Admin screens -->
+        <activity android:name=".admin.AdminInboxActivity" android:exported="false" />
         <activity android:name=".admin.RejectedRequestsActivity" android:exported="false" />
-
 
     </application>
 </manifest>

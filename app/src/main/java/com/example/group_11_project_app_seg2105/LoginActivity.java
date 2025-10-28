@@ -2,22 +2,20 @@ package com.example.group_11_project_app_seg2105;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.group_11_project_app_seg2105.admin.RejectedRequestsActivity;
-import com.example.group_11_project_app_seg2105.data.DatabaseHelper;
+import com.example.group_11_project_app_seg2105.WelcomeAdminActivity;
 import com.example.group_11_project_app_seg2105.core.validation.InputValidator;
-import android.util.Log;
+import com.example.group_11_project_app_seg2105.data.DatabaseHelper;
+import com.example.group_11_project_app_seg2105.data.RegistrationStatus;
 
-/**
- * Handles login for all user roles using SQLite (DatabaseHelper) and InputValidator.
- * Combines both versions' logic while keeping all functionality required by Deliverable 1.
- */
 public class LoginActivity extends AppCompatActivity {
 
     private EditText emailField, passwordField;
@@ -32,56 +30,62 @@ public class LoginActivity extends AppCompatActivity {
         emailField = findViewById(R.id.emailField);
         passwordField = findViewById(R.id.passwordField);
         loginButton = findViewById(R.id.loginButton);
-
-        // Initialize SQLite and seed admin
         db = new DatabaseHelper(this);
         db.seedAdmin();
 
-        // Registration link
         TextView registerLink = findViewById(R.id.registerLink);
         if (registerLink != null) {
             registerLink.setOnClickListener(v -> {
-                Intent intent = new Intent(LoginActivity.this, RegistrationActivity.class);
-                startActivity(intent);
+                Intent i = new Intent(LoginActivity.this, RegistrationActivity.class);
+                startActivity(i);
+                finish();
             });
         }
 
-        // Prefill email if passed from RegistrationActivity
         String prefill = getIntent().getStringExtra("prefill_email");
-        if (prefill != null) {
-            emailField.setText(prefill);
-        }
+        if (prefill != null) emailField.setText(prefill);
 
-        // Handle login button click
         loginButton.setOnClickListener(this::handleLogin);
     }
 
     private void handleLogin(View v) {
-        String email = emailField != null ? emailField.getText().toString().trim() : "";
-        String password = passwordField != null ? passwordField.getText().toString().trim() : "";
+        String email = safeText(emailField);
+        String password = safeText(passwordField);
 
-        // Simple field validation
         if (!InputValidator.isValidEmail(email) || !InputValidator.isValidPassword(password)) {
             Toast.makeText(this, "Invalid email or password format", Toast.LENGTH_SHORT).show();
             return;
         }
 
         try {
-            // Log start of login process
             Log.d("DB", "Attempting login for: " + email);
 
-            // Validate against database
-            boolean valid = db.validateLogin(email, password);
-            Log.d("DB", "Login result: " + valid);
-
-            if (!valid) {
+            if (!db.validateLogin(email, password)) {
                 Toast.makeText(this, "Invalid credentials", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            String role = db.getUserRole(email);
-            Log.d("DB", "Fetched role for " + email + ": " + role);
+            RegistrationStatus status = db.getRegistrationStatus(email);
+            if (status == null) {
+                Toast.makeText(this, "Account not yet registered for approval.", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
+            switch (status) {
+                case PENDING:
+                    Toast.makeText(this, "Your registration is pending admin approval.", Toast.LENGTH_LONG).show();
+                    return;
+                case REJECTED:
+                    Toast.makeText(this, "Your registration was rejected. Contact admin.", Toast.LENGTH_LONG).show();
+                    return;
+                case APPROVED:
+                    break; // continue
+                default:
+                    Toast.makeText(this, "Unknown registration status.", Toast.LENGTH_SHORT).show();
+                    return;
+            }
+
+            String role = db.getUserRole(email);
             if (role == null) {
                 Toast.makeText(this, "No role found for account", Toast.LENGTH_SHORT).show();
                 return;
@@ -90,7 +94,7 @@ public class LoginActivity extends AppCompatActivity {
             Intent next;
             switch (role.toLowerCase()) {
                 case "admin":
-                    next = new Intent(this, RejectedRequestsActivity.class);
+                    next = new Intent(this, WelcomeAdminActivity.class);
                     break;
                 case "tutor":
                     next = new Intent(this, WelcomeTutorActivity.class);
@@ -103,7 +107,6 @@ public class LoginActivity extends AppCompatActivity {
                     return;
             }
 
-            Log.d("DB", "Navigating to: " + next.getComponent().getClassName());
             startActivity(next);
             finish();
 
@@ -111,5 +114,9 @@ public class LoginActivity extends AppCompatActivity {
             Toast.makeText(this, "Login failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
             Log.e("DB", "Login error", e);
         }
+    }
+
+    private static String safeText(EditText field) {
+        return field == null ? "" : field.getText().toString().trim();
     }
 }

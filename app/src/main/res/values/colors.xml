@@ -16,5 +16,9 @@
     <color name="p4_card_stroke">#2A3A48</color>
     <color name="p4_button_text">#FFFFFF</color>
 
+    <color name="teal_700">#00796B</color>
+    <color name="red">#D32F2F</color>
+
+
 
 </resources>

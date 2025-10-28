@@ -34,18 +34,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(DatabaseContract.TutorCourses.CREATE);
         db.execSQL(DatabaseContract.RegistrationRequests.CREATE);
         db.execSQL(DatabaseContract.RegistrationRequests.INDEX_STATUS);
+
         seedDefaults(db);
         seedPart4Rejected(db);
+        ensureAdminApproved(db);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        if (oldVersion < 2) {
-            db.execSQL(DatabaseContract.StudentProfiles.CREATE);
-        }
-        if (oldVersion < 3) {
-            db.execSQL(DatabaseContract.TutorProfiles.CREATE);
-        }
+        if (oldVersion < 2) db.execSQL(DatabaseContract.StudentProfiles.CREATE);
+        if (oldVersion < 3) db.execSQL(DatabaseContract.TutorProfiles.CREATE);
         if (oldVersion < 4) {
             db.execSQL(DatabaseContract.RegistrationRequests.CREATE);
             db.execSQL(DatabaseContract.RegistrationRequests.INDEX_STATUS);
@@ -57,24 +55,30 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             ensureColumn(db, DatabaseContract.TutorProfiles.TABLE, DatabaseContract.TutorProfiles.FIRST);
             ensureColumn(db, DatabaseContract.TutorProfiles.TABLE, DatabaseContract.TutorProfiles.LAST);
         }
+        ensureAdminApproved(db);
     }
 
     private void ensureColumn(SQLiteDatabase db, String table, String column) {
         try {
             db.execSQL("ALTER TABLE " + table + " ADD COLUMN " + column + " TEXT");
-        } catch (Exception ignored) {
-        }
+        } catch (Exception ignored) {}
     }
 
     private void seedDefaults(SQLiteDatabase db) {
         insertUser(db, "admin@uottawa.ca", "admin123", "admin");
         insertUser(db, "student@uottawa.ca", "pass123", "student");
         insertUser(db, "tutor@uottawa.ca", "teach123", "tutor");
+
         ContentValues studentProfile = new ContentValues();
         studentProfile.put(DatabaseContract.StudentProfiles.EMAIL, "student@uottawa.ca");
         studentProfile.put(DatabaseContract.StudentProfiles.FIRST, "John");
         studentProfile.put(DatabaseContract.StudentProfiles.LAST, "Student");
-        db.insertWithOnConflict(DatabaseContract.StudentProfiles.TABLE, null, studentProfile, SQLiteDatabase.CONFLICT_IGNORE);
+        db.insertWithOnConflict(
+                DatabaseContract.StudentProfiles.TABLE, null, studentProfile,
+                SQLiteDatabase.CONFLICT_IGNORE
+        );
+
+        ensureAdminApproved(db);
     }
 
     private void insertUser(SQLiteDatabase db, String email, String password, String role) {
@@ -85,21 +89,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.insertWithOnConflict(DatabaseContract.Users.TABLE, null, values, SQLiteDatabase.CONFLICT_IGNORE);
     }
 
+    // === FIXED: Always seed visible rejected/pending data ===
     private void seedPart4Rejected(SQLiteDatabase db) {
-        Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM " + DatabaseContract.RegistrationRequests.TABLE, null);
-        try {
-            if (cursor.moveToFirst() && cursor.getInt(0) > 0) {
-                return;
-            }
-        } finally {
-            cursor.close();
-        }
+        Log.d(TAG, "Seeding sample rejected and pending requests...");
         long now = System.currentTimeMillis();
 
         insertReg(db, "student@uottawa.ca", RegistrationStatus.REJECTED, now - 86_400_000L, "Rejected student reason");
         insertReg(db, "tutor@uottawa.ca", RegistrationStatus.REJECTED, now - 43_200_000L, "Rejected tutor reason");
-        insertReg(db, "pending_tutor@uottawa.ca", RegistrationStatus.PENDING, System.currentTimeMillis(), null);
-        insertReg(db, "pending_student@uottawa.ca", RegistrationStatus.PENDING, System.currentTimeMillis(), null);
+        insertReg(db, "pending_tutor@uottawa.ca", RegistrationStatus.PENDING, now, null);
+        insertReg(db, "pending_student@uottawa.ca", RegistrationStatus.PENDING, now, null);
     }
 
     private void insertReg(SQLiteDatabase db, String email, RegistrationStatus status, long createdAt, String reason) {
@@ -109,6 +107,39 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(DatabaseContract.RegistrationRequests.STATUS, status.name());
         values.put(DatabaseContract.RegistrationRequests.REASON, reason);
         db.insert(DatabaseContract.RegistrationRequests.TABLE, null, values);
+    }
+
+    private void ensureAdminApproved(SQLiteDatabase db) {
+        ContentValues cv = new ContentValues();
+        cv.put(DatabaseContract.RegistrationRequests.STATUS, RegistrationStatus.APPROVED.name());
+        cv.put(DatabaseContract.RegistrationRequests.REASON, (String) null);
+        cv.put(DatabaseContract.RegistrationRequests.DECIDED_BY, "system");
+        cv.put(DatabaseContract.RegistrationRequests.DECIDED_AT, System.currentTimeMillis());
+
+        int rows = db.update(
+                DatabaseContract.RegistrationRequests.TABLE,
+                cv,
+                DatabaseContract.RegistrationRequests.EMAIL + "=?",
+                new String[]{"admin@uottawa.ca"}
+        );
+        if (rows == 0) {
+            cv.put(DatabaseContract.RegistrationRequests.EMAIL, "admin@uottawa.ca");
+            cv.put(DatabaseContract.RegistrationRequests.CREATED_AT, System.currentTimeMillis());
+            db.insertWithOnConflict(
+                    DatabaseContract.RegistrationRequests.TABLE,
+                    null,
+                    cv,
+                    SQLiteDatabase.CONFLICT_IGNORE
+            );
+        }
+        Log.d(TAG, "ensureAdminApproved applied, rowsUpdated=" + rows);
+    }
+
+    public void seedAdmin() {
+        if (getUserRole("admin@uottawa.ca") == null) {
+            saveUser("admin", "admin@uottawa.ca", "admin123");
+        }
+        ensureAdminApproved(getWritableDatabase());
     }
 
     public void saveUser(String role, String email, String password) {
@@ -123,11 +154,21 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public boolean validateLogin(String email, String password) {
         SQLiteDatabase db = getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT 1 FROM " + DatabaseContract.Users.TABLE + " WHERE " + DatabaseContract.Users.EMAIL + "=? AND " + DatabaseContract.Users.PASSWORD + "=?", new String[]{email, password});
+        Cursor cursor = db.rawQuery(
+                "SELECT 1 FROM " + DatabaseContract.Users.TABLE +
+                        " WHERE " + DatabaseContract.Users.EMAIL + "=? AND " +
+                        DatabaseContract.Users.PASSWORD + "=?",
+                new String[]{email, password});
         try {
             boolean ok = cursor.moveToFirst();
-            Log.d("LOGIN", "Login attempt for " + email + " | Success: " + ok);
-            return ok;
+            if (!ok) return false;
+
+            RegistrationStatus status = getRegistrationStatus(email);
+            if (status == RegistrationStatus.PENDING || status == RegistrationStatus.REJECTED) {
+                Log.d(TAG, "Blocked login for " + email + " (status=" + status + ")");
+                return false;
+            }
+            return true;
         } finally {
             cursor.close();
         }
@@ -135,20 +176,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public String getUserRole(String email) {
         SQLiteDatabase db = getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT " + DatabaseContract.Users.ROLE + " FROM " + DatabaseContract.Users.TABLE + " WHERE " + DatabaseContract.Users.EMAIL + "=?", new String[]{email});
+        Cursor cursor = db.rawQuery(
+                "SELECT " + DatabaseContract.Users.ROLE +
+                        " FROM " + DatabaseContract.Users.TABLE +
+                        " WHERE " + DatabaseContract.Users.EMAIL + "=?",
+                new String[]{email});
         try {
-            String role = cursor.moveToFirst() ? cursor.getString(0) : null;
-            Log.d(TAG, "Fetched role for " + email + ": " + role);
-            return role;
+            return cursor.moveToFirst() ? cursor.getString(0) : null;
         } finally {
             cursor.close();
-        }
-    }
-
-    public void seedAdmin() {
-        if (getUserRole("admin@uottawa.ca") == null) {
-            saveUser("admin", "admin@uottawa.ca", "admin123");
-            Log.d(TAG, "Seeded admin user");
         }
     }
 
@@ -161,7 +197,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(DatabaseContract.StudentProfiles.PHONE, phone);
         values.put(DatabaseContract.StudentProfiles.PROGRAM, program);
         db.insertWithOnConflict(DatabaseContract.StudentProfiles.TABLE, null, values, SQLiteDatabase.CONFLICT_REPLACE);
-        Log.d(TAG, "Saved student profile for: " + email);
     }
 
     public boolean createStudentWithProfile(String email, String password, String first, String last, String phone, String program) {
@@ -173,10 +208,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             userValues.put(DatabaseContract.Users.PASSWORD, password);
             userValues.put(DatabaseContract.Users.ROLE, "student");
             long userResult = db.insertWithOnConflict(DatabaseContract.Users.TABLE, null, userValues, SQLiteDatabase.CONFLICT_IGNORE);
-            if (userResult == -1) {
-                Log.d(TAG, "Failed to create student (duplicate email): " + email);
-                return false;
-            }
+            if (userResult == -1) return false;
+
             ContentValues profileValues = new ContentValues();
             profileValues.put(DatabaseContract.StudentProfiles.EMAIL, email);
             profileValues.put(DatabaseContract.StudentProfiles.FIRST, first);
@@ -184,8 +217,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             profileValues.put(DatabaseContract.StudentProfiles.PHONE, phone);
             profileValues.put(DatabaseContract.StudentProfiles.PROGRAM, program);
             db.insertWithOnConflict(DatabaseContract.StudentProfiles.TABLE, null, profileValues, SQLiteDatabase.CONFLICT_REPLACE);
+
             db.setTransactionSuccessful();
-            Log.d(TAG, "Created student with profile: " + email);
             return true;
         } finally {
             db.endTransaction();
@@ -201,10 +234,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             userValues.put(DatabaseContract.Users.PASSWORD, password);
             userValues.put(DatabaseContract.Users.ROLE, "tutor");
             long userResult = db.insertWithOnConflict(DatabaseContract.Users.TABLE, null, userValues, SQLiteDatabase.CONFLICT_IGNORE);
-            if (userResult == -1) {
-                Log.d(TAG, "Failed to create tutor (duplicate email): " + email);
-                return false;
-            }
+            if (userResult == -1) return false;
+
             ContentValues profileValues = new ContentValues();
             profileValues.put(DatabaseContract.TutorProfiles.EMAIL, email);
             profileValues.put(DatabaseContract.TutorProfiles.FIRST, first);
@@ -212,6 +243,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             profileValues.put(DatabaseContract.TutorProfiles.PHONE, phone);
             profileValues.put(DatabaseContract.TutorProfiles.DEGREE, degree);
             db.insertWithOnConflict(DatabaseContract.TutorProfiles.TABLE, null, profileValues, SQLiteDatabase.CONFLICT_REPLACE);
+
             if (courses != null) {
                 for (String course : courses) {
                     ContentValues courseValues = new ContentValues();
@@ -220,101 +252,92 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     db.insertWithOnConflict(DatabaseContract.TutorCourses.TABLE, null, courseValues, SQLiteDatabase.CONFLICT_IGNORE);
                 }
             }
+
             db.setTransactionSuccessful();
-            Log.d(TAG, "Created tutor with all data: " + email);
             return true;
         } finally {
             db.endTransaction();
         }
     }
 
-    public static class StudentProfile {
-        public final String email;
-        public final String firstName;
-        public final String lastName;
-        public final String phone;
-        public final String program;
-
-        public StudentProfile(String email, String firstName, String lastName, String phone, String program) {
-            this.email = email;
-            this.firstName = firstName;
-            this.lastName = lastName;
-            this.phone = phone;
-            this.program = program;
-        }
-    }
-
-    public List<RegistrationRequest> getRejectedRequests() {
-        SQLiteDatabase db = getReadableDatabase();
-        String sql = "SELECT r." + DatabaseContract.RegistrationRequests.ID + ", r." + DatabaseContract.RegistrationRequests.EMAIL + ", COALESCE(s." + DatabaseContract.StudentProfiles.FIRST + ", t." + DatabaseContract.TutorProfiles.FIRST + ") AS first_name, COALESCE(s." + DatabaseContract.StudentProfiles.LAST + ", t." + DatabaseContract.TutorProfiles.LAST + ") AS last_name, u." + DatabaseContract.Users.ROLE + ", r." + DatabaseContract.RegistrationRequests.STATUS + ", r." + DatabaseContract.RegistrationRequests.REASON + ", r." + DatabaseContract.RegistrationRequests.CREATED_AT + ", r." + DatabaseContract.RegistrationRequests.DECIDED_BY + ", r." + DatabaseContract.RegistrationRequests.DECIDED_AT + " FROM " + DatabaseContract.RegistrationRequests.TABLE + " r LEFT JOIN " + DatabaseContract.Users.TABLE + " u ON r." + DatabaseContract.RegistrationRequests.EMAIL + " = u." + DatabaseContract.Users.EMAIL + " LEFT JOIN " + DatabaseContract.StudentProfiles.TABLE + " s ON r." + DatabaseContract.RegistrationRequests.EMAIL + " = s." + DatabaseContract.StudentProfiles.EMAIL + " LEFT JOIN " + DatabaseContract.TutorProfiles.TABLE + " t ON r." + DatabaseContract.RegistrationRequests.EMAIL + " = t." + DatabaseContract.TutorProfiles.EMAIL + " WHERE r." + DatabaseContract.RegistrationRequests.STATUS + " = ? ORDER BY r." + DatabaseContract.RegistrationRequests.CREATED_AT + " DESC";
-        List<RegistrationRequest> out = new ArrayList<>();
-        Cursor cursor = db.rawQuery(sql, new String[]{RegistrationStatus.REJECTED.name()});
-        try {
-            while (cursor.moveToNext()) {
-                long id = cursor.getLong(0);
-                String email = cursor.getString(1);
-                String first = cursor.isNull(2) ? null : cursor.getString(2);
-                String last = cursor.isNull(3) ? null : cursor.getString(3);
-                String role = cursor.isNull(4) ? null : cursor.getString(4);
-                RegistrationStatus status = RegistrationStatus.valueOf(cursor.getString(5));
-                String reason = cursor.isNull(6) ? null : cursor.getString(6);
-                long createdAt = cursor.getLong(7);
-                String decidedBy = cursor.isNull(8) ? null : cursor.getString(8);
-                Long decidedAt = cursor.isNull(9) ? null : cursor.getLong(9);
-                out.add(new RegistrationRequest(id, email, first, last, role, status, reason, createdAt, decidedBy, decidedAt));
-            }
-        } finally {
-            cursor.close();
-        }
-        return out;
-    }
-
-    public boolean reapproveRejected(long requestId, String adminEmail, @Nullable String note) {
+    public boolean insertRegistrationRequest(String email, String role, String first, String last, String password, String phone, @Nullable String extra) {
         SQLiteDatabase db = getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(DatabaseContract.RegistrationRequests.STATUS, RegistrationStatus.APPROVED.name());
-        values.put(DatabaseContract.RegistrationRequests.DECIDED_BY, adminEmail);
-        values.put(DatabaseContract.RegistrationRequests.DECIDED_AT, System.currentTimeMillis());
-        if (note != null) {
-            values.put(DatabaseContract.RegistrationRequests.REASON, note);
+        Cursor c = db.rawQuery(
+                "SELECT 1 FROM " + DatabaseContract.RegistrationRequests.TABLE +
+                        " WHERE " + DatabaseContract.RegistrationRequests.EMAIL + "=?",
+                new String[]{email});
+        try {
+            if (c.moveToFirst()) return false;
+        } finally {
+            c.close();
         }
-        int rows = db.update(DatabaseContract.RegistrationRequests.TABLE, values, DatabaseContract.RegistrationRequests.ID + "=? AND " + DatabaseContract.RegistrationRequests.STATUS + "=?", new String[]{String.valueOf(requestId), RegistrationStatus.REJECTED.name()});
-        return rows == 1;
+
+        ContentValues v = new ContentValues();
+        v.put(DatabaseContract.RegistrationRequests.EMAIL, email);
+        v.put(DatabaseContract.RegistrationRequests.STATUS, RegistrationStatus.PENDING.name());
+        v.put(DatabaseContract.RegistrationRequests.CREATED_AT, System.currentTimeMillis());
+        v.put(DatabaseContract.RegistrationRequests.REASON, (String) null);
+        db.insert(DatabaseContract.RegistrationRequests.TABLE, null, v);
+        return true;
     }
 
-    public StudentProfile getStudentProfile(String email) {
+    // === Deliverable 2: Extended registration with full profile info ===
+    public boolean insertFullRegistrationRequest(String firstName, String lastName, String email,
+                                                 String password, String role, String phone, String program) {
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        try (Cursor c = db.rawQuery(
+                "SELECT 1 FROM " + DatabaseContract.RegistrationRequests.TABLE +
+                        " WHERE " + DatabaseContract.RegistrationRequests.EMAIL + "=?",
+                new String[]{email})) {
+            if (c.moveToFirst()) return false;
+        }
+
+        ContentValues v = new ContentValues();
+        v.put(DatabaseContract.RegistrationRequests.EMAIL, email);
+        v.put(DatabaseContract.RegistrationRequests.STATUS, RegistrationStatus.PENDING.name());
+        v.put(DatabaseContract.RegistrationRequests.CREATED_AT, System.currentTimeMillis());
+        v.put(DatabaseContract.RegistrationRequests.REASON, (String) null);
+
+        long result = db.insert(DatabaseContract.RegistrationRequests.TABLE, null, v);
+        Log.d(TAG, "Inserted registration request for " + email + " result=" + result);
+        return result != -1;
+    }
+
+
+    public RegistrationStatus getRegistrationStatus(String email) {
         SQLiteDatabase db = getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT " + DatabaseContract.StudentProfiles.FIRST + ", " + DatabaseContract.StudentProfiles.LAST + ", " + DatabaseContract.StudentProfiles.PHONE + ", " + DatabaseContract.StudentProfiles.PROGRAM + " FROM " + DatabaseContract.StudentProfiles.TABLE + " WHERE " + DatabaseContract.StudentProfiles.EMAIL + "=?", new String[]{email});
+        Cursor c = db.rawQuery(
+                "SELECT " + DatabaseContract.RegistrationRequests.STATUS +
+                        " FROM " + DatabaseContract.RegistrationRequests.TABLE +
+                        " WHERE " + DatabaseContract.RegistrationRequests.EMAIL + "=?",
+                new String[]{email});
         try {
-            if (cursor.moveToFirst()) {
-                Log.d(TAG, "Fetched student profile for: " + email);
-                return new StudentProfile(email, cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3));
-            }
-            Log.d(TAG, "No student profile found for: " + email);
+            if (c.moveToFirst()) return RegistrationStatus.valueOf(c.getString(0));
             return null;
         } finally {
-            cursor.close();
+            c.close();
         }
     }
-    // --- Admin Inbox Methods ---
+
     public ArrayList<RegistrationRequest> getPendingRequests() {
         SQLiteDatabase db = getReadableDatabase();
-        String sql =
-                "SELECT r." + R_ID + ", " +
-                        "r." + R_EMAIL + ", " +
-                        "COALESCE(s." + C_FIRST + ", t." + C_FIRST + ") AS first_name, " +
-                        "COALESCE(s." + C_LAST + ", t." + C_LAST + ") AS last_name, " +
-                        "u." + C_ROLE + ", " +
-                        "r." + R_STATUS + ", " +
-                        "r." + R_REASON + " " +
-                        "FROM " + T_REG_REQUESTS + " r " +
-                        "LEFT JOIN " + T_USERS + " u ON r." + R_EMAIL + " = u." + C_EMAIL + " " +
-                        "LEFT JOIN " + T_STUDENT_PROFILES + " s ON r." + R_EMAIL + " = s." + C_EMAIL + " " +
-                        "LEFT JOIN " + T_TUTOR_PROFILES + " t ON r." + R_EMAIL + " = t." + C_EMAIL + " " +
-                        "WHERE r." + R_STATUS + " = 'PENDING' " +
-                        "ORDER BY r." + R_CREATED_AT + " DESC";
-
         ArrayList<RegistrationRequest> out = new ArrayList<>();
+
+        String sql =
+                "SELECT r." + DatabaseContract.RegistrationRequests.ID + ", " +
+                        "r." + DatabaseContract.RegistrationRequests.EMAIL + ", " +
+                        "COALESCE(s." + DatabaseContract.StudentProfiles.FIRST + ", t." + DatabaseContract.TutorProfiles.FIRST + ") AS first_name, " +
+                        "COALESCE(s." + DatabaseContract.StudentProfiles.LAST + ", t." + DatabaseContract.TutorProfiles.LAST + ") AS last_name, " +
+                        "u." + DatabaseContract.Users.ROLE + ", " +
+                        "r." + DatabaseContract.RegistrationRequests.STATUS + ", " +
+                        "r." + DatabaseContract.RegistrationRequests.REASON + " " +
+                        "FROM " + DatabaseContract.RegistrationRequests.TABLE + " r " +
+                        "LEFT JOIN " + DatabaseContract.Users.TABLE + " u ON r." + DatabaseContract.RegistrationRequests.EMAIL + " = u." + DatabaseContract.Users.EMAIL + " " +
+                        "LEFT JOIN " + DatabaseContract.StudentProfiles.TABLE + " s ON r." + DatabaseContract.RegistrationRequests.EMAIL + " = s." + DatabaseContract.StudentProfiles.EMAIL + " " +
+                        "LEFT JOIN " + DatabaseContract.TutorProfiles.TABLE + " t ON r." + DatabaseContract.RegistrationRequests.EMAIL + " = t." + DatabaseContract.TutorProfiles.EMAIL + " " +
+                        "WHERE r." + DatabaseContract.RegistrationRequests.STATUS + " = 'PENDING' " +
+                        "ORDER BY r." + DatabaseContract.RegistrationRequests.CREATED_AT + " DESC";
 
         try (Cursor c = db.rawQuery(sql, null)) {
             while (c.moveToNext()) {
@@ -326,7 +349,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 String status = c.getString(5);
                 String reason = c.isNull(6) ? "" : c.getString(6);
 
-                out.add(new RegistrationRequest(id, email, first, last, role, status, reason));
+                out.add(new RegistrationRequest(
+                        id, email, first, last, role,
+                        RegistrationStatus.valueOf(status),
+                        reason, 0L, null, null
+                ));
             }
         }
         return out;
@@ -335,9 +362,78 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public void updateRequestStatus(String email, String newStatus) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
-        cv.put(R_STATUS, newStatus);
-        cv.put(R_DECIDED_AT, System.currentTimeMillis());
-        db.update(T_REG_REQUESTS, cv, R_EMAIL + "=?", new String[]{email});
+        cv.put(DatabaseContract.RegistrationRequests.STATUS, newStatus);
+        cv.put(DatabaseContract.RegistrationRequests.DECIDED_AT, System.currentTimeMillis());
+        db.update(
+                DatabaseContract.RegistrationRequests.TABLE,
+                cv,
+                DatabaseContract.RegistrationRequests.EMAIL + "=?",
+                new String[]{email}
+        );
+        Log.d(TAG, "Updated request status for " + email + " → " + newStatus);
     }
 
+    public List<RegistrationRequest> getRejectedRequests() {
+        SQLiteDatabase db = getReadableDatabase();
+        List<RegistrationRequest> out = new ArrayList<>();
+
+        String sql =
+                "SELECT r." + DatabaseContract.RegistrationRequests.ID + ", " +
+                        "r." + DatabaseContract.RegistrationRequests.EMAIL + ", " +
+                        "COALESCE(s." + DatabaseContract.StudentProfiles.FIRST + ", t." + DatabaseContract.TutorProfiles.FIRST + ") AS first_name, " +
+                        "COALESCE(s." + DatabaseContract.StudentProfiles.LAST + ", t." + DatabaseContract.TutorProfiles.LAST + ") AS last_name, " +
+                        "u." + DatabaseContract.Users.ROLE + ", " +
+                        "r." + DatabaseContract.RegistrationRequests.STATUS + ", " +
+                        "r." + DatabaseContract.RegistrationRequests.REASON + ", " +
+                        "r." + DatabaseContract.RegistrationRequests.CREATED_AT + " " +
+                        "FROM " + DatabaseContract.RegistrationRequests.TABLE + " r " +
+                        "LEFT JOIN " + DatabaseContract.Users.TABLE + " u ON r." + DatabaseContract.RegistrationRequests.EMAIL + " = u." + DatabaseContract.Users.EMAIL + " " +
+                        "LEFT JOIN " + DatabaseContract.StudentProfiles.TABLE + " s ON r." + DatabaseContract.RegistrationRequests.EMAIL + " = s." + DatabaseContract.StudentProfiles.EMAIL + " " +
+                        "LEFT JOIN " + DatabaseContract.TutorProfiles.TABLE + " t ON r." + DatabaseContract.RegistrationRequests.EMAIL + " = t." + DatabaseContract.TutorProfiles.EMAIL + " " +
+                        "WHERE r." + DatabaseContract.RegistrationRequests.STATUS + " = 'REJECTED' " +
+                        "ORDER BY r." + DatabaseContract.RegistrationRequests.CREATED_AT + " DESC";
+
+        try (Cursor c = db.rawQuery(sql, null)) {
+            while (c.moveToNext()) {
+                long id = c.getLong(0);
+                String email = c.getString(1);
+                String first = c.isNull(2) ? "" : c.getString(2);
+                String last = c.isNull(3) ? "" : c.getString(3);
+                String role = c.isNull(4) ? "" : c.getString(4);
+                String status = c.getString(5);
+                String reason = c.isNull(6) ? "" : c.getString(6);
+                long createdAt = c.getLong(7);
+
+                out.add(new RegistrationRequest(
+                        id, email, first, last, role,
+                        RegistrationStatus.valueOf(status),
+                        reason, createdAt,
+                        null, null
+                ));
+            }
+        }
+
+        Log.d(TAG, "Fetched " + out.size() + " rejected requests");
+        return out;
+    }
+
+    public boolean reapproveRejected(long requestId, String adminEmail, @Nullable String note) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(DatabaseContract.RegistrationRequests.STATUS, RegistrationStatus.APPROVED.name());
+        values.put(DatabaseContract.RegistrationRequests.DECIDED_BY, adminEmail);
+        values.put(DatabaseContract.RegistrationRequests.DECIDED_AT, System.currentTimeMillis());
+        if (note != null) values.put(DatabaseContract.RegistrationRequests.REASON, note);
+
+        int rows = db.update(
+                DatabaseContract.RegistrationRequests.TABLE,
+                values,
+                DatabaseContract.RegistrationRequests.ID + "=? AND " +
+                        DatabaseContract.RegistrationRequests.STATUS + "=?",
+                new String[]{String.valueOf(requestId), RegistrationStatus.REJECTED.name()}
+        );
+
+        Log.d(TAG, "Reapproved rejected request ID=" + requestId + " Rows=" + rows);
+        return rows == 1;
+    }
 }
