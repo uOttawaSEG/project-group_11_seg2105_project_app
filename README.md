@@ -53,7 +53,7 @@ SQLite data evidence
 You can view our Deliverable 2 demo here:
 https://youtu.be/qGH-HmAW7L0
 
-UML()
+UML(https://github.com/uOttawaSEG/project-group_11_seg2105_project_app/blob/main/UML%20Diagram%20-%20Deliverable%20%232%20SEG-1.pdf)
 
 Notes:
 
