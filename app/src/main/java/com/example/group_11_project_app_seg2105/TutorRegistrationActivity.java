@@ -17,12 +17,12 @@ import androidx.core.widget.NestedScrollView;
 
 import com.example.group_11_project_app_seg2105.core.validation.InputValidator;
 import com.example.group_11_project_app_seg2105.data.DatabaseHelper;
+import com.example.group_11_project_app_seg2105.data.RegistrationStatus;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.textfield.MaterialAutoCompleteTextView;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
-
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -31,7 +31,6 @@ import java.util.List;
 public class TutorRegistrationActivity extends AppCompatActivity {
 
     private EditText firstNameField, lastNameField, emailField, passwordField, confirmPasswordField, phoneNumberField, highestDegree;
-    ;
     private Button registerButton;
     private TextView loginLink;
     private NestedScrollView scroll;
@@ -43,6 +42,7 @@ public class TutorRegistrationActivity extends AppCompatActivity {
 
     private DatabaseHelper db;
 
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_tutor_registration);
@@ -50,9 +50,7 @@ public class TutorRegistrationActivity extends AppCompatActivity {
         MaterialAutoCompleteTextView titleDropdown = findViewById(R.id.titleDropdown);
         ArrayAdapter<CharSequence> roles = ArrayAdapter.createFromResource(this, R.array.registration_roles_title, android.R.layout.simple_dropdown_item_1line);
         titleDropdown.setAdapter(roles);
-
         titleDropdown.setOnClickListener(v -> titleDropdown.showDropDown());
-
         titleDropdown.setOnItemClickListener((parent, view, position, id) -> {
             String choice = parent.getItemAtPosition(position).toString();
             if (choice.toLowerCase().contains("student")) {
@@ -62,9 +60,6 @@ public class TutorRegistrationActivity extends AppCompatActivity {
                 titleDropdown.setText("Tutor Registration", false);
             }
         });
-
-
-
 
         scroll = findViewById(R.id.scroll);
         firstNameField = findViewById(R.id.firstNameField);
@@ -81,52 +76,25 @@ public class TutorRegistrationActivity extends AppCompatActivity {
         courseInput = findViewById(R.id.courseInput);
         coursesChipGroup = findViewById(R.id.coursesChipGroup);
 
+        db = new DatabaseHelper(this);
+        db.seedAdmin();
 
-        courseInputLayout.setEndIconOnClickListener(v -> {
-            Toast.makeText(this, "add clicked", Toast.LENGTH_SHORT).show();
-            addCourseFromInput();
-        });
-
+        courseInputLayout.setEndIconOnClickListener(v -> addCourseFromInput());
         courseInput.setOnEditorActionListener((tv, actionID, event) -> {
-            if(actionID == EditorInfo.IME_ACTION_DONE || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_UP)) {
+            if (actionID == EditorInfo.IME_ACTION_DONE ||
+                    (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_UP)) {
                 addCourseFromInput();
                 return true;
             }
             return false;
         });
 
-
-        db = new DatabaseHelper(this);
-        db.seedAdmin();
-
-
-        if (courseInputLayout != null) {
-            courseInputLayout.setEndIconOnClickListener(v ->
-                    addCourseFromInput());
-
-        }
-
-        if (courseInput != null) {
-            courseInput.setOnEditorActionListener((tv, actionID, event) -> {
-                if (actionID == EditorInfo.IME_ACTION_DONE || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_UP)) {
-                    addCourseFromInput();
-                    return true;
-                }
-                return false;
-
-            });
-        }
-
         registerButton.setOnClickListener(this::handleRegister);
 
-        if (loginLink != null) {
-            loginLink.setOnClickListener(v -> {
-                startActivity(new Intent(this, LoginActivity.class));
-                finish();
-            });
-        }
-
-
+        loginLink.setOnClickListener(v -> {
+            startActivity(new Intent(this, LoginActivity.class));
+            finish();
+        });
     }
 
     private void handleRegister(View v) {
@@ -139,15 +107,9 @@ public class TutorRegistrationActivity extends AppCompatActivity {
         String confirmPassword = safeText(confirmPasswordField);
         String phone = safeText(phoneNumberField);
         String degree = safeText(highestDegree);
-
         List<String> courseList = new ArrayList<>(tutorCourses);
 
-
-        List<String> errors = new ArrayList<>();
-
-        errors.addAll(InputValidator.validateTutor(firstName, lastName, email, password, confirmPassword, phone, degree, courseList));
-
-
+        List<String> errors = InputValidator.validateTutor(firstName, lastName, email, password, confirmPassword, phone, degree, courseList);
         if (!errors.isEmpty()) {
             applyFieldErrors(firstNameField, errors, "First name is required");
             applyFieldErrors(lastNameField, errors, "Last name is required");
@@ -156,29 +118,30 @@ public class TutorRegistrationActivity extends AppCompatActivity {
             applyFieldErrors(confirmPasswordField, errors, "Passwords do not match");
             applyFieldErrors(phoneNumberField, errors, "Phone must be digits only");
             applyFieldErrors(highestDegree, errors, "Highest degree is required");
-
             Toast.makeText(this, bulletJoin(errors), Toast.LENGTH_LONG).show();
             return;
         }
 
+        // Check if account already exists
         if (db.getUserRole(email) != null) {
             setError(emailField, "An account with this email already exists.");
             scrollToView(emailField);
             return;
         }
 
+        // Create user + tutor profile
         boolean ok = db.createTutorWithProfile(email, password, firstName, lastName, phone, degree, courseList);
-
         if (!ok) {
             setError(emailField, "An account with this email already exists.");
             return;
         }
 
+        // Insert a pending registration request
+        db.insertRegistrationRequest(email, "tutor", firstName, lastName, password, phone, degree);
 
-        Toast.makeText(this, "Registration successful! Please login.", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Registration submitted. Await admin approval before logging in.", Toast.LENGTH_LONG).show();
         startActivity(new Intent(this, LoginActivity.class).putExtra("prefill_email", email));
         finish();
-
     }
 
     private void addCourseFromInput() {
@@ -186,19 +149,16 @@ public class TutorRegistrationActivity extends AppCompatActivity {
 
         String raw = safeText(courseInput).toUpperCase().replaceAll("\\s+", "");
         if (raw.isEmpty()) {
-            setError(courseInputLayout, "add at least one course");
+            setError(courseInputLayout, "Add at least one course");
             return;
         }
         if (!tutorCourses.add(raw)) {
-            setError(courseInputLayout, "course already added");
+            setError(courseInputLayout, "Course already added");
             return;
         }
         setError(courseInputLayout, null);
         addChip(raw);
         courseInput.setText("");
-
-        Toast.makeText(this, "Added " + raw, Toast.LENGTH_SHORT).show();
-
     }
 
     private void addChip(String label) {
@@ -211,20 +171,15 @@ public class TutorRegistrationActivity extends AppCompatActivity {
             tutorCourses.remove(label);
             coursesChipGroup.removeView(chip);
             if (tutorCourses.isEmpty()) {
-                setError(courseInputLayout, "add at least one course");
+                setError(courseInputLayout, "Add at least one course");
             }
         });
-
         coursesChipGroup.addView(chip);
-
-
     }
-
 
     // --- helpers ---
     private static String safeText(TextView tv) {
         return tv == null ? "" : String.valueOf(tv.getText()).trim();
-
     }
 
     private static String bulletJoin(List<String> lines) {
@@ -257,7 +212,7 @@ public class TutorRegistrationActivity extends AppCompatActivity {
         setError(field, null);
     }
 
-    private void applyFieldErrors(View field, java.util.List<String> errors, String matchesMessage) {
+    private void applyFieldErrors(View field, List<String> errors, String matchesMessage) {
         if (field == null || errors == null || matchesMessage == null) return;
         for (String e : errors) {
             if (e.equalsIgnoreCase(matchesMessage) || e.toLowerCase().contains(matchesMessage.toLowerCase())) {
@@ -267,7 +222,6 @@ public class TutorRegistrationActivity extends AppCompatActivity {
         }
         clearError(field);
     }
-
 
     private void clearAllFieldErrors() {
         clearError(firstNameField);
@@ -284,18 +238,4 @@ public class TutorRegistrationActivity extends AppCompatActivity {
         if (scroll == null || target == null) return;
         scroll.post(() -> scroll.smoothScrollTo(0, Math.max(0, target.getTop() - 24)));
     }
-
-    private View pickFirstErrorView() {
-        if (firstNameField != null && firstNameField.getError() != null) return firstNameField;
-        if (lastNameField != null && lastNameField.getError() != null) return lastNameField;
-        if (emailField != null && emailField.getError() != null) return emailField;
-        if (passwordField != null && passwordField.getError() != null) return passwordField;
-        if (confirmPasswordField != null && confirmPasswordField.getError() != null)
-            return confirmPasswordField;
-        if (phoneNumberField != null && phoneNumberField.getError() != null)
-            return phoneNumberField;
-        if (highestDegree != null && highestDegree.getError() != null) return highestDegree;
-        return null;
-    }
 }
-

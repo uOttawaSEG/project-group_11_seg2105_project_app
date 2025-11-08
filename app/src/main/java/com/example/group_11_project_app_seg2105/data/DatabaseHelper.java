@@ -19,14 +19,13 @@ import java.util.List;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DB_NAME = "otams.db";
-    private static final int DB_VERSION = 7;
+    private static final int DB_VERSION = 6;
 
     // Tables
     private static final String T_USERS = "users";
     private static final String T_STUDENT_PROFILES = "student_profiles";
     private static final String T_TUTOR_PROFILES = "tutor_profiles";
     private static final String T_TUTOR_COURSES = "tutor_courses";
-    private static final String T_TUTOR_AVAIL = "tutor_availability";
     private static final String T_REG_REQUESTS = "registration_requests";
 
     // Common Columns
@@ -52,14 +51,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String R_REASON = "reason";
     private static final String R_DECIDED_BY = "decided_by_admin";
     private static final String R_DECIDED_AT = "decided_at";
-
-    // availability table
-    private static final String A_ID = "id";
-    private static final String A_TUTOR_EMAIL = "tutor_email";
-    private static final String A_DATE = "date";        // ISO yyyy-MM-dd
-    private static final String A_START_MIN = "start_min";     // minutes from 00:00
-    private static final String A_END_MIN = "end_min";
-
 
 
 
@@ -123,13 +114,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         );
         db.execSQL("CREATE INDEX IF NOT EXISTS idx_reg_status ON " + T_REG_REQUESTS + "(" + R_STATUS +")");
 
-        db.execSQL("CREATE TABLE " + T_TUTOR_AVAIL + " (" +
-                A_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                A_TUTOR_EMAIL + " TEXT NOT NULL, " +
-                A_DATE + " TEXT NOT NULL, " +
-                A_START_MIN + " INTEGER NOT NULL, " +
-                A_END_MIN + " INTEGER NOT NULL, " +
-                "FOREIGN KEY(" + A_TUTOR_EMAIL + ") REFERENCES " + T_USERS + "(" + C_EMAIL + ") ON DELETE CASCADE)");
         //temp part 4 rejected users for testing
         seedPart4Rejected(db);
     }
@@ -176,17 +160,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             try { db.execSQL("ALTER TABLE " + T_TUTOR_PROFILES   + " ADD COLUMN " + C_FIRST + " TEXT"); } catch (Exception ignore) {}
             try { db.execSQL("ALTER TABLE " + T_TUTOR_PROFILES   + " ADD COLUMN " + C_LAST  + " TEXT"); } catch (Exception ignore) {}
         }
-
-        if(oldV < 7) {
-            db.execSQL("CREATE TABLE IF NOT EXISTS " + T_TUTOR_AVAIL + " (" +
-                    A_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                    A_TUTOR_EMAIL + " TEXT NOT NULL, " +
-                    A_DATE + " TEXT NOT NULL, " +
-                    A_START_MIN + " INTEGER NOT NULL, " +
-                    A_END_MIN + " INTEGER NOT NULL, " +
-                    "FOREIGN KEY(" + A_TUTOR_EMAIL + ") REFERENCES " + T_USERS + "(" + C_EMAIL + ") ON DELETE CASCADE)");
-        }
-
     }
 
     // --- Core User Methods ---
@@ -343,21 +316,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             db.endTransaction();
         }
     }
-
-    public long addTutorAvailabilitySlot(String tutoremail, String dateIso, int startMin, int endMin) {
-
-        SQLiteDatabase db = getWritableDatabase();
-
-        ContentValues cv = new ContentValues();
-
-        cv.put(A_TUTOR_EMAIL, tutoremail);
-        cv.put(A_DATE, dateIso);
-        cv.put(A_START_MIN, startMin);
-        cv.put(A_END_MIN, endMin);
-
-        return db.insert(T_TUTOR_AVAIL, null, cv);
-    }
-
 
     // --- Student Profile Model ---
     public static class StudentProfile {
