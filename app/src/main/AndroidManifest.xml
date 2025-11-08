@@ -47,5 +47,9 @@
         <activity android:name=".admin.RejectedRequestsActivity" android:exported="false" />
 
 
+        <!-- Tutor -->
+        <activity android:name=".tutor.TutorAvailabilityActivity" android:exported="false" />
+
+
     </application>
 </manifest>
