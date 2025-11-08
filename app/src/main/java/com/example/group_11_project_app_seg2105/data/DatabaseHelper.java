@@ -14,7 +14,54 @@ import java.util.Collection;
 import java.util.List;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
+
     private static final String TAG = "DB";
+
+    private static final String DB_NAME = "otams.db";
+    private static final int DB_VERSION = 7;
+
+    // Tables
+    private static final String T_USERS = "users";
+    private static final String T_STUDENT_PROFILES = "student_profiles";
+    private static final String T_TUTOR_PROFILES = "tutor_profiles";
+    private static final String T_TUTOR_COURSES = "tutor_courses";
+    private static final String T_REG_REQUESTS = "registration_requests";
+    private static final String T_TUTOR_AVAIL = "tutor_availability";
+
+    // Common Columns
+    private static final String C_EMAIL = "email";
+    private static final String C_PASSWORD = "password";
+    private static final String C_ROLE = "role";
+
+    // Student Columns
+    private static final String C_FIRST = "first_name";
+    private static final String C_LAST = "last_name";
+    private static final String C_PHONE = "phone";
+    private static final String C_PROGRAM = "program";
+
+    // Tutor Columns
+    private static final String C_DEGREE = "degree";
+    private static final String C_COURSE = "course";
+
+    // Registration Request Columns
+    private static final String R_ID = "id";
+    private static final String R_EMAIL = "email";
+    private static final String R_CREATED_AT = "created_at";
+    private static final String R_STATUS = "status";
+    private static final String R_REASON = "reason";
+    private static final String R_DECIDED_BY = "decided_by_admin";
+    private static final String R_DECIDED_AT = "decided_at";
+
+    // Tutor Availability Columns
+    private static final String A_ID = "id";
+    private static final String A_TUTOR_EMAIL = "tutor_email";
+    private static final String A_DATE = "date"; // ISO yyyy-MM-dd
+
+    private static final String A_START_MIN = "start_min"; // minutes from 00:00
+    private static final String A_END_MIN = "end_min";
+
+
+
 
     public DatabaseHelper(Context context) {
         super(context, DatabaseContract.NAME, null, DatabaseContract.VERSION);
@@ -35,9 +82,64 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(DatabaseContract.RegistrationRequests.CREATE);
         db.execSQL(DatabaseContract.RegistrationRequests.INDEX_STATUS);
 
+
         seedDefaults(db);
         seedPart4Rejected(db);
         ensureAdminApproved(db);
+
+        db.execSQL("CREATE TABLE " + T_STUDENT_PROFILES + " (" +
+                C_EMAIL + " TEXT PRIMARY KEY, " +
+                C_FIRST + " TEXT, " +
+                C_LAST + " TEXT, " +
+                C_PHONE + " TEXT, " +
+                C_PROGRAM + " TEXT, " +
+                "FOREIGN KEY(" + C_EMAIL + ") REFERENCES " + T_USERS + "(" + C_EMAIL + ") ON DELETE CASCADE)");
+
+        db.execSQL("CREATE TABLE " + T_TUTOR_PROFILES + " (" +
+                C_EMAIL + " TEXT PRIMARY KEY, " +
+                C_FIRST + " TEXT NOT NULL, " +
+                C_LAST + " TEXT NOT NULL, " +
+                C_PHONE + " TEXT NOT NULL, " +
+                C_DEGREE + " TEXT NOT NULL, " +
+                "FOREIGN KEY(" + C_EMAIL + ") REFERENCES " + T_USERS + "(" + C_EMAIL + ") ON DELETE CASCADE)");
+
+        db.execSQL("CREATE TABLE " + T_TUTOR_COURSES + " (" +
+                C_EMAIL + " TEXT NOT NULL, " +
+                C_COURSE + " TEXT NOT NULL, " +
+                "PRIMARY KEY (" + C_EMAIL + ", " + C_COURSE + "), " +
+                "FOREIGN KEY(" + C_EMAIL + ") REFERENCES " + T_USERS + "(" + C_EMAIL + ") ON DELETE CASCADE)");
+
+        db.execSQL("INSERT INTO " + T_USERS + " (" + C_EMAIL + ", " + C_PASSWORD + ", " + C_ROLE + ") VALUES " +
+                "('admin@uottawa.ca','admin123','admin')," +
+                "('student@uottawa.ca','pass123','student')," +
+                "('tutor@uottawa.ca','teach123','tutor')");
+
+        db.execSQL("INSERT INTO " + T_STUDENT_PROFILES + " (" + C_EMAIL + ", " + C_FIRST + ", " + C_LAST + ") VALUES " +
+                "('student@uottawa.ca', 'John', 'Student')");
+
+        db.execSQL("CREATE TABLE " + T_REG_REQUESTS + " (" +
+                R_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                R_EMAIL + " TEXT NOT NULL, " +
+                R_CREATED_AT + " INTEGER NOT NULL, " +
+                R_STATUS + " TEXT NOT NULL CHECK(" + R_STATUS + " IN ('PENDING', 'APPROVED', 'REJECTED')), " +
+                R_REASON + " TEXT, " +
+                R_DECIDED_BY + " TEXT, " +
+                R_DECIDED_AT + " INTEGER, " +
+                "FOREIGN KEY(" + R_EMAIL + ") REFERENCES " + T_USERS + "(" + C_EMAIL + ") ON DELETE CASCADE)"
+        );
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_reg_status ON " + T_REG_REQUESTS + "(" + R_STATUS +")");
+
+        db.execSQL("CREATE TABLE " + T_TUTOR_AVAIL + " (" +
+                A_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                A_TUTOR_EMAIL + " TEXT NOT NULL, " +
+                A_DATE + " TEXT NOT NULL, " +
+                A_START_MIN + " INTEGER NOT NULL, " +
+                A_END_MIN + " INTEGER NOT NULL, " +
+                "FOREIGN KEY(" + A_TUTOR_EMAIL + ") REFERENCES " + T_USERS + "(" + C_EMAIL + ") ON DELETE CASCADE)");
+        //temp part 4 rejected users for testing
+        seedPart4Rejected(db);
+
+
     }
 
     @Override
@@ -55,7 +157,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             ensureColumn(db, DatabaseContract.TutorProfiles.TABLE, DatabaseContract.TutorProfiles.FIRST);
             ensureColumn(db, DatabaseContract.TutorProfiles.TABLE, DatabaseContract.TutorProfiles.LAST);
         }
+
         ensureAdminApproved(db);
+
+
+        if (oldV < 7) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS " + T_TUTOR_AVAIL + " (" +
+                    A_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    A_TUTOR_EMAIL + " TEXT NOT NULL, " +
+                    A_DATE + " TEXT NOT NULL, " +
+                    A_START_MIN + " INTEGER NOT NULL, " +
+                    A_END_MIN + " INTEGER NOT NULL, " +
+                    "FOREIGN KEY(" + A_TUTOR_EMAIL + ") REFERENCES " + T_USERS + "(" + C_EMAIL + ") ON DELETE CASCADE)");
+        }
+
     }
 
     private void ensureColumn(SQLiteDatabase db, String table, String column) {
@@ -260,7 +375,104 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
+
     public boolean insertRegistrationRequest(String email, String role, String first, String last, String password, String phone, @Nullable String extra) {
+        SQLiteDatabase db = getWritableDatabase();
+        Cursor c = db.rawQuery(
+                "SELECT 1 FROM " + DatabaseContract.RegistrationRequests.TABLE +
+                        " WHERE " + DatabaseContract.RegistrationRequests.EMAIL + "=?",
+                new String[]{email});
+        try {
+            if (c.moveToFirst()) return false;
+        } finally {
+            c.close();
+        }
+
+        ContentValues v = new ContentValues();
+        v.put(DatabaseContract.RegistrationRequests.EMAIL, email);
+        v.put(DatabaseContract.RegistrationRequests.STATUS, RegistrationStatus.PENDING.name());
+        v.put(DatabaseContract.RegistrationRequests.CREATED_AT, System.currentTimeMillis());
+        v.put(DatabaseContract.RegistrationRequests.REASON, (String) null);
+        db.insert(DatabaseContract.RegistrationRequests.TABLE, null, v);
+        return true;
+
+    }
+    // tutor insert method
+    public long addTutorAvailabilitySlot(String tutorEmail, String dateIso, int startMin, int endMin) {
+        SQLiteDatabase db = getWritableDatabase();
+
+        ContentValues cv = new ContentValues();
+        cv.put(A_TUTOR_EMAIL, tutorEmail);
+        cv.put(A_DATE, dateIso);
+        cv.put(A_START_MIN, startMin);
+        cv.put(A_END_MIN, endMin);
+
+        return db.insert(T_TUTOR_AVAIL, null, cv);
+    }
+
+
+
+    // --- Student Profile Model ---
+    public static class StudentProfile {
+        public final String email;
+        public final String firstName;
+        public final String lastName;
+        public final String phone;
+        public final String program;
+
+        public StudentProfile(String email, String firstName, String lastName,
+                              String phone, String program) {
+            this.email = email;
+            this.firstName = firstName;
+            this.lastName = lastName;
+            this.phone = phone;
+            this.program = program;
+        }
+    }
+
+
+
+    public List<RegistrationRequest> getRejectedRequests() {
+        SQLiteDatabase db = getReadableDatabase();
+
+        String sql =
+                "SELECT r." + R_ID + ", " +
+                        "r." + R_EMAIL + ", " +
+                        "COALESCE(s." + C_FIRST + ", t." + C_FIRST + ") AS first_name, " +
+                        "COALESCE(s." + C_LAST + ", t." + C_LAST + ") AS last_name, " +
+                        "u." + C_ROLE + ", " +
+                        "r." + R_STATUS + ", " +
+                        "r." + R_REASON + " " +
+                        "FROM " + T_REG_REQUESTS + " r " +
+                        "LEFT JOIN " + T_USERS + " u ON r." + R_EMAIL + " = u." + C_EMAIL + " " +
+                        "LEFT JOIN " + T_STUDENT_PROFILES + " s ON r." + R_EMAIL + " = s." + C_EMAIL + " " +
+                        "LEFT JOIN " + T_TUTOR_PROFILES + " t ON r." + R_EMAIL + " = t." + C_EMAIL + " " +
+                        "WHERE r." + R_STATUS + " = 'REJECTED' " +
+                        "ORDER BY r." + R_CREATED_AT + " DESC";
+
+        List<RegistrationRequest> out = new ArrayList<>();
+
+        try(Cursor c = db.rawQuery(sql, null)) {
+
+            while (c.moveToNext()) {
+                long id = c.getLong(0);
+                String email = c.getString(1);
+                String first = c.isNull(2) ? null : c.getString(2);
+                String last = c.isNull(3) ? null : c.getString(3);
+                String role = c.isNull(4) ? null : c.getString(4);
+                String status = c.getString(5);
+                String reason = c.isNull(6) ? null : c.getString(6);
+
+                out.add(new RegistrationRequest(id, email, first, last, role, status, reason));
+            }
+
+
+        }
+        return out;
+
+    }
+
+    public boolean reapproveRejected(long requestID, String adminEmail, @Nullable String note) {
         SQLiteDatabase db = getWritableDatabase();
         Cursor c = db.rawQuery(
                 "SELECT 1 FROM " + DatabaseContract.RegistrationRequests.TABLE +
