@@ -13,8 +13,14 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.group_11_project_app_seg2105.WelcomeAdminActivity;
 import com.example.group_11_project_app_seg2105.core.validation.InputValidator;
+
 import com.example.group_11_project_app_seg2105.data.DatabaseHelper;
 import com.example.group_11_project_app_seg2105.data.RegistrationStatus;
+
+import com.example.group_11_project_app_seg2105.tutor.TutorAvailabilityActivity;
+
+import android.util.Log;
+
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -97,7 +103,7 @@ public class LoginActivity extends AppCompatActivity {
                     next = new Intent(this, WelcomeAdminActivity.class);
                     break;
                 case "tutor":
-                    next = new Intent(this, WelcomeTutorActivity.class);
+                    next = new Intent(this, TutorAvailabilityActivity.class);
                     break;
                 case "student":
                     next = new Intent(this, WelcomeStudentActivity.class);
