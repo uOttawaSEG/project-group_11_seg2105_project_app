@@ -16,22 +16,9 @@
     <color name="p4_card_stroke">#2A3A48</color>
     <color name="p4_button_text">#FFFFFF</color>
 
-
     <color name="teal_700">#00796B</color>
     <color name="red">#D32F2F</color>
 
-
-
-    //color palette for tutor availability part 1
-    <color name="tutor_bg_primary">#0D141F</color>
-    <color name="tutor_card_bg">#141B2C</color>
-    <color name="tutor_primary">#4F46E5</color>
-    <color name="tutor_primary_soft">#3730A3</color>
-    <color name="tutor_chip_bg">#111827</color>
-    <color name="tutor_border">#202A3A</color>
-    <color name="tutor_text_primary">#E5E7EB</color>
-    <color name="tutor_text_secondary">#9CA3AF</color>
-    <color name="tutor_error">#F97066</color>
 
 
 </resources>
