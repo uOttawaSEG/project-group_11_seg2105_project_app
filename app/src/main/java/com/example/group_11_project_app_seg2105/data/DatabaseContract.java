@@ -1,7 +1,7 @@
 package com.example.group_11_project_app_seg2105.data;
 
 public final class DatabaseContract {
-    public static final int VERSION = 6;
+    public static final int VERSION = 7;
     public static final String NAME = "otams.db";
 
     private DatabaseContract() {
@@ -53,5 +53,28 @@ public final class DatabaseContract {
         public static final String DECIDED_AT = "decided_at";
         public static final String CREATE = "CREATE TABLE " + TABLE + " (" + ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " + EMAIL + " TEXT NOT NULL, " + CREATED_AT + " INTEGER NOT NULL, " + STATUS + " TEXT NOT NULL CHECK(" + STATUS + " IN ('PENDING', 'APPROVED', 'REJECTED')), " + REASON + " TEXT, " + DECIDED_BY + " TEXT, " + DECIDED_AT + " INTEGER, FOREIGN KEY(" + EMAIL + ") REFERENCES " + Users.TABLE + "(" + Users.EMAIL + ") ON DELETE CASCADE)";
         public static final String INDEX_STATUS = "CREATE INDEX IF NOT EXISTS idx_reg_status ON " + TABLE + "(" + STATUS + ")";
+    }
+
+    public static final class TutorAvailability {
+        public static final String TABLE = "tutor_availability";
+        public static final String ID = "id";
+        public static final String TUTOR_EMAIL = "tutor_email";
+        public static final String DATE = "date";        // YYYY-MM-DD
+        public static final String START = "start_time"; // HH:mm
+        public static final String END = "end_time";     // HH:mm
+        public static final String AUTO_APPROVE = "auto_approve"; // 0/1 for D3 toggle
+
+        public static final String CREATE =
+                "CREATE TABLE " + TABLE + " (" +
+                        ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        TUTOR_EMAIL + " TEXT NOT NULL, " +
+                        DATE + " TEXT NOT NULL, " +
+                        START + " TEXT NOT NULL, " +
+                        END + " TEXT NOT NULL, " +
+                        AUTO_APPROVE + " INTEGER NOT NULL DEFAULT 0, " +
+                        "FOREIGN KEY(" + TUTOR_EMAIL + ") REFERENCES " + Users.TABLE + "(" + Users.EMAIL + ") ON DELETE CASCADE)";
+
+        public static final String INDEX_TUTOR_DATE =
+                "CREATE INDEX IF NOT EXISTS idx_avail_tutor_date ON " + TABLE + "(" + TUTOR_EMAIL + "," + DATE + ")";
     }
 }

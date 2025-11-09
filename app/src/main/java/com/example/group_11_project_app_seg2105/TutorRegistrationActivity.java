@@ -17,7 +17,6 @@ import androidx.core.widget.NestedScrollView;
 
 import com.example.group_11_project_app_seg2105.core.validation.InputValidator;
 import com.example.group_11_project_app_seg2105.data.DatabaseHelper;
-import com.example.group_11_project_app_seg2105.data.RegistrationStatus;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.textfield.MaterialAutoCompleteTextView;
@@ -137,7 +136,7 @@ public class TutorRegistrationActivity extends AppCompatActivity {
         }
 
         // Insert a pending registration request
-        db.insertRegistrationRequest(email, "tutor", firstName, lastName, password, phone, degree);
+        db.insertRegistrationRequest(email, "com/example/group_11_project_app_seg2105/tutor", firstName, lastName, password, phone, degree);
 
         Toast.makeText(this, "Registration submitted. Await admin approval before logging in.", Toast.LENGTH_LONG).show();
         startActivity(new Intent(this, LoginActivity.class).putExtra("prefill_email", email));

@@ -136,7 +136,7 @@ public class SQLiteUserRepository implements UserRepository {
     }
 
     private void upsertTutorProfile(SQLiteDatabase db, User user) {
-        if (!"tutor".equalsIgnoreCase(user.role)) {
+        if (!"com/example/group_11_project_app_seg2105/tutor".equalsIgnoreCase(user.role)) {
             db.delete(DatabaseContract.TutorProfiles.TABLE, DatabaseContract.TutorProfiles.EMAIL + "=?", new String[]{user.email});
             db.delete(DatabaseContract.TutorCourses.TABLE, DatabaseContract.TutorCourses.EMAIL + "=?", new String[]{user.email});
             return;
@@ -177,7 +177,7 @@ public class SQLiteUserRepository implements UserRepository {
             }
             return new ProfileRecord(null, null, null, null, null);
         }
-        if ("tutor".equalsIgnoreCase(role)) {
+        if ("com/example/group_11_project_app_seg2105/tutor".equalsIgnoreCase(role)) {
             Cursor cursor = db.query(DatabaseContract.TutorProfiles.TABLE, new String[]{DatabaseContract.TutorProfiles.FIRST, DatabaseContract.TutorProfiles.LAST, DatabaseContract.TutorProfiles.PHONE, DatabaseContract.TutorProfiles.DEGREE}, DatabaseContract.TutorProfiles.EMAIL + "=?", new String[]{email}, null, null, null);
             try {
                 if (cursor.moveToFirst()) {
@@ -192,7 +192,7 @@ public class SQLiteUserRepository implements UserRepository {
     }
 
     private List<String> loadCourses(SQLiteDatabase db, String email, String role) {
-        if (!"tutor".equalsIgnoreCase(role)) {
+        if (!"com/example/group_11_project_app_seg2105/tutor".equalsIgnoreCase(role)) {
             return new ArrayList<>();
         }
         Cursor cursor = db.query(DatabaseContract.TutorCourses.TABLE, new String[]{DatabaseContract.TutorCourses.COURSE}, DatabaseContract.TutorCourses.EMAIL + "=?", new String[]{email}, null, null, null);

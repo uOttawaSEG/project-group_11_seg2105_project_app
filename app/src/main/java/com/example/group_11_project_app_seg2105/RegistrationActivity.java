@@ -44,6 +44,7 @@ public class RegistrationActivity extends AppCompatActivity {
                     startActivity(new Intent(this, TutorRegistrationActivity.class));
                     finish();
                 } else {
+                    // show student form
                     titleDropdown.setText("Student Registration", false);
                 }
             });
