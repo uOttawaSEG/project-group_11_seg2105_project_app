@@ -20,5 +20,11 @@ public class WelcomeTutorActivity extends AppCompatActivity {
             startActivity(new Intent(this, LoginActivity.class));
             finish();
         });
+        Button btnManageAvailability = findViewById(R.id.btnManageAvailability);
+        btnManageAvailability.setOnClickListener(v -> {
+            Intent i = new Intent(WelcomeTutorActivity.this,
+                    com.example.group_11_project_app_seg2105.tutor.TutorAvailabilityActivity.class);
+            startActivity(i);
+        });
     }
 }

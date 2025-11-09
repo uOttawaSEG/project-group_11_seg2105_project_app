@@ -34,4 +34,12 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <Button
+        android:id="@+id/btnManageAvailability"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Manage Availability"
+        android:layout_marginTop="16dp"/>
+
+
 </androidx.constraintlayout.widget.ConstraintLayout>

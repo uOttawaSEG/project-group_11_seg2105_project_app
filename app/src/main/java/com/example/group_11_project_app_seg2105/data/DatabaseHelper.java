@@ -34,6 +34,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(DatabaseContract.TutorCourses.CREATE);
         db.execSQL(DatabaseContract.RegistrationRequests.CREATE);
         db.execSQL(DatabaseContract.RegistrationRequests.INDEX_STATUS);
+        db.execSQL(DatabaseContract.TutorAvailability.CREATE);
+        db.execSQL(DatabaseContract.TutorAvailability.INDEX_TUTOR_DATE);
 
         seedDefaults(db);
         seedPart4Rejected(db);
@@ -55,6 +57,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             ensureColumn(db, DatabaseContract.TutorProfiles.TABLE, DatabaseContract.TutorProfiles.FIRST);
             ensureColumn(db, DatabaseContract.TutorProfiles.TABLE, DatabaseContract.TutorProfiles.LAST);
         }
+        if (oldVersion < 7) {
+            db.execSQL(DatabaseContract.TutorAvailability.CREATE);
+            db.execSQL(DatabaseContract.TutorAvailability.INDEX_TUTOR_DATE);
+        }
         ensureAdminApproved(db);
     }
 
@@ -67,7 +73,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private void seedDefaults(SQLiteDatabase db) {
         insertUser(db, "admin@uottawa.ca", "admin123", "admin");
         insertUser(db, "student@uottawa.ca", "pass123", "student");
-        insertUser(db, "tutor@uottawa.ca", "teach123", "tutor");
+        insertUser(db, "tutor@uottawa.ca", "teach123", "com/example/group_11_project_app_seg2105/tutor");
 
         ContentValues studentProfile = new ContentValues();
         studentProfile.put(DatabaseContract.StudentProfiles.EMAIL, "student@uottawa.ca");
@@ -232,7 +238,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             ContentValues userValues = new ContentValues();
             userValues.put(DatabaseContract.Users.EMAIL, email);
             userValues.put(DatabaseContract.Users.PASSWORD, password);
-            userValues.put(DatabaseContract.Users.ROLE, "tutor");
+            userValues.put(DatabaseContract.Users.ROLE, "com/example/group_11_project_app_seg2105/tutor");
             long userResult = db.insertWithOnConflict(DatabaseContract.Users.TABLE, null, userValues, SQLiteDatabase.CONFLICT_IGNORE);
             if (userResult == -1) return false;
 
@@ -435,5 +441,70 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         Log.d(TAG, "Reapproved rejected request ID=" + requestId + " Rows=" + rows);
         return rows == 1;
+    }
+    public long insertAvailability(AvailabilitySlot s) {
+        if (!isValidTimeStep(s.start) || !isValidTimeStep(s.end)) return -1;
+        if (isOverlapping(s.tutorEmail, s.date, s.start, s.end)) return -1;
+
+        ContentValues v = new ContentValues();
+        v.put(DatabaseContract.TutorAvailability.TUTOR_EMAIL, s.tutorEmail);
+        v.put(DatabaseContract.TutorAvailability.DATE, s.date);
+        v.put(DatabaseContract.TutorAvailability.START, s.start);
+        v.put(DatabaseContract.TutorAvailability.END, s.end);
+        v.put(DatabaseContract.TutorAvailability.AUTO_APPROVE, s.autoApprove ? 1 : 0);
+
+        return getWritableDatabase().insert(DatabaseContract.TutorAvailability.TABLE, null, v);
+    }
+
+    public boolean deleteAvailability(long id, String tutorEmail) {
+        int rows = getWritableDatabase().delete(
+                DatabaseContract.TutorAvailability.TABLE,
+                DatabaseContract.TutorAvailability.ID + "=? AND " +
+                        DatabaseContract.TutorAvailability.TUTOR_EMAIL + "=?",
+                new String[]{String.valueOf(id), tutorEmail});
+        return rows == 1;
+    }
+
+    public List<AvailabilitySlot> getAvailabilityForTutorOnDate(String tutorEmail, String date) {
+        ArrayList<AvailabilitySlot> out = new ArrayList<>();
+
+        Cursor c = getReadableDatabase().rawQuery(
+                "SELECT id, tutor_email, date, start_time, end_time, auto_approve " +
+                        "FROM " + DatabaseContract.TutorAvailability.TABLE +
+                        " WHERE tutor_email=? AND date=? ORDER BY start_time",
+                new String[]{tutorEmail, date});
+
+        try {
+            while (c.moveToNext()) {
+                out.add(new AvailabilitySlot(
+                        c.getLong(0),
+                        c.getString(1),
+                        c.getString(2),
+                        c.getString(3),
+                        c.getString(4),
+                        c.getInt(5) == 1
+                ));
+            }
+        } finally {
+            c.close();
+        }
+
+        return out;
+    }
+
+    private boolean isValidTimeStep(String time) {
+        // time format HH:mm — minutes must be 00 or 30
+        int mm = Integer.parseInt(time.substring(3,5));
+        return (mm == 0 || mm == 30);
+    }
+
+    private boolean isOverlapping(String email, String date, String start, String end) {
+        Cursor c = getReadableDatabase().rawQuery(
+                "SELECT 1 FROM " + DatabaseContract.TutorAvailability.TABLE +
+                        " WHERE tutor_email=? AND date=? AND start_time < ? AND end_time > ? LIMIT 1",
+                new String[]{email, date, end, start});
+        boolean exists = c.moveToFirst();
+        c.close();
+        return exists;
     }
 }

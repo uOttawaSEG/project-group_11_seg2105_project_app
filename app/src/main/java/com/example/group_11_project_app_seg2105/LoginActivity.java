@@ -11,7 +11,6 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.group_11_project_app_seg2105.WelcomeAdminActivity;
 import com.example.group_11_project_app_seg2105.core.validation.InputValidator;
 import com.example.group_11_project_app_seg2105.data.DatabaseHelper;
 import com.example.group_11_project_app_seg2105.data.RegistrationStatus;
@@ -96,7 +95,7 @@ public class LoginActivity extends AppCompatActivity {
                 case "admin":
                     next = new Intent(this, WelcomeAdminActivity.class);
                     break;
-                case "tutor":
+                case "com/example/group_11_project_app_seg2105/tutor":
                     next = new Intent(this, WelcomeTutorActivity.class);
                     break;
                 case "student":

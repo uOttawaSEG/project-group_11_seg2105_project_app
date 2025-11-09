@@ -46,5 +46,11 @@
         <activity android:name=".admin.AdminInboxActivity" android:exported="false" />
         <activity android:name=".admin.RejectedRequestsActivity" android:exported="false" />
 
+        <activity
+            android:name=".tutor.TutorAvailabilityActivity"
+            android:exported="false"
+            android:label="Manage Availability"/>
+
+
     </application>
 </manifest>
