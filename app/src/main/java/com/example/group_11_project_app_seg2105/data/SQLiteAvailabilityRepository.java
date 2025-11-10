@@ -20,11 +20,24 @@ public class SQLiteAvailabilityRepository implements AvailabilityRepository {
         this.helper = helper;
         
         SQLiteDatabase db = helper.getWritableDatabase();
-        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_tutor_availability_unique ON "
-                + TABLE + " (" + DatabaseContract.TutorAvailability.TUTOR_EMAIL + ", "
-                + DatabaseContract.TutorAvailability.DATE + ", "
-                + DatabaseContract.TutorAvailability.START + ", "
-                + DatabaseContract.TutorAvailability.END + ")");
+        
+        db.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE + " (" +
+                DatabaseContract.TutorAvailability.ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                DatabaseContract.TutorAvailability.TUTOR_EMAIL + " TEXT NOT NULL, " +
+                DatabaseContract.TutorAvailability.DATE + " TEXT NOT NULL, " +
+                DatabaseContract.TutorAvailability.START + " TEXT NOT NULL, " +
+                DatabaseContract.TutorAvailability.END + " TEXT NOT NULL, " +
+                DatabaseContract.TutorAvailability.AUTO_APPROVE + " INTEGER NOT NULL DEFAULT 0, " +
+                "FOREIGN KEY(" + DatabaseContract.TutorAvailability.TUTOR_EMAIL + ") REFERENCES " +
+                DatabaseContract.Users.TABLE + "(" + DatabaseContract.Users.EMAIL + ") ON DELETE CASCADE)"
+        );
+        
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_tutor_availability_unique ON " +
+                TABLE + " (" + DatabaseContract.TutorAvailability.TUTOR_EMAIL + ", " +
+                DatabaseContract.TutorAvailability.DATE + ", " +
+                DatabaseContract.TutorAvailability.START + ", " +
+                DatabaseContract.TutorAvailability.END + ")"
+        );
     }
 
     @Override
