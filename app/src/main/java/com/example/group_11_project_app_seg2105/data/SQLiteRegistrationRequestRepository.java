@@ -1,6 +1,7 @@
 package com.example.group_11_project_app_seg2105.data;
 
 import android.content.ContentValues;
+import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
@@ -8,25 +9,56 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SQLiteRegistrationRequestRepository implements RegistrationRequestRepository {
-    private static final String BASE_QUERY = "SELECT r." + DatabaseContract.RegistrationRequests.ID + ", r." + DatabaseContract.RegistrationRequests.EMAIL + ", COALESCE(s." + DatabaseContract.StudentProfiles.FIRST + ", t." + DatabaseContract.TutorProfiles.FIRST + ") AS first_name, COALESCE(s." + DatabaseContract.StudentProfiles.LAST + ", t." + DatabaseContract.TutorProfiles.LAST + ") AS last_name, u." + DatabaseContract.Users.ROLE + ", r." + DatabaseContract.RegistrationRequests.STATUS + ", r." + DatabaseContract.RegistrationRequests.REASON + ", r." + DatabaseContract.RegistrationRequests.CREATED_AT + ", r." + DatabaseContract.RegistrationRequests.DECIDED_BY + ", r." + DatabaseContract.RegistrationRequests.DECIDED_AT + " FROM " + DatabaseContract.RegistrationRequests.TABLE + " r LEFT JOIN " + DatabaseContract.Users.TABLE + " u ON r." + DatabaseContract.RegistrationRequests.EMAIL + " = u." + DatabaseContract.Users.EMAIL + " LEFT JOIN " + DatabaseContract.StudentProfiles.TABLE + " s ON r." + DatabaseContract.RegistrationRequests.EMAIL + " = s." + DatabaseContract.StudentProfiles.EMAIL + " LEFT JOIN " + DatabaseContract.TutorProfiles.TABLE + " t ON r." + DatabaseContract.RegistrationRequests.EMAIL + " = t." + DatabaseContract.TutorProfiles.EMAIL;
-    private final DatabaseHelper helper;
 
-    public SQLiteRegistrationRequestRepository(DatabaseHelper helper) {
+    private static final String BASE_QUERY =
+            "SELECT r." + DatabaseContract.RegistrationRequests.ID + ", " +
+                    "r." + DatabaseContract.RegistrationRequests.EMAIL + ", " +
+                    "COALESCE(s." + DatabaseContract.StudentProfiles.FIRST + ", t." + DatabaseContract.TutorProfiles.FIRST + ") AS first_name, " +
+                    "COALESCE(s." + DatabaseContract.StudentProfiles.LAST + ", t." + DatabaseContract.TutorProfiles.LAST + ") AS last_name, " +
+                    "u." + DatabaseContract.Users.ROLE + ", " +
+                    "r." + DatabaseContract.RegistrationRequests.STATUS + ", " +
+                    "r." + DatabaseContract.RegistrationRequests.REASON + ", " +
+                    "r." + DatabaseContract.RegistrationRequests.CREATED_AT + ", " +
+                    "r." + DatabaseContract.RegistrationRequests.DECIDED_BY + ", " +
+                    "r." + DatabaseContract.RegistrationRequests.DECIDED_AT +
+                    " FROM " + DatabaseContract.RegistrationRequests.TABLE + " r " +
+                    "LEFT JOIN " + DatabaseContract.Users.TABLE + " u ON r." + DatabaseContract.RegistrationRequests.EMAIL + " = u." + DatabaseContract.Users.EMAIL + " " +
+                    "LEFT JOIN " + DatabaseContract.StudentProfiles.TABLE + " s ON r." + DatabaseContract.RegistrationRequests.EMAIL + " = s." + DatabaseContract.StudentProfiles.EMAIL + " " +
+                    "LEFT JOIN " + DatabaseContract.TutorProfiles.TABLE + " t ON r." + DatabaseContract.RegistrationRequests.EMAIL + " = t." + DatabaseContract.TutorProfiles.EMAIL;
+
+    private final DatabaseHelper helper;
+    private final Context context;
+
+    public SQLiteRegistrationRequestRepository(Context context, DatabaseHelper helper) {
+        this.context = context;
         this.helper = helper;
     }
 
     @Override
     public RegistrationRequest create(String email, RegistrationStatus status, String reason) {
+
+        // ✅ AUTO-APPROVE LOGIC
+        PrefsUserStore prefs = new PrefsUserStore(context);
+        boolean autoApprove = prefs.getAutoApprove(email); // email = tutor email
+
+        if (autoApprove) {
+            status = RegistrationStatus.APPROVED;
+        } else {
+            status = RegistrationStatus.PENDING;
+        }
+
         SQLiteDatabase db = helper.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(DatabaseContract.RegistrationRequests.EMAIL, email);
         values.put(DatabaseContract.RegistrationRequests.CREATED_AT, System.currentTimeMillis());
         values.put(DatabaseContract.RegistrationRequests.STATUS, status.name());
+
         if (reason == null) {
             values.putNull(DatabaseContract.RegistrationRequests.REASON);
         } else {
             values.put(DatabaseContract.RegistrationRequests.REASON, reason);
         }
+
         long id = db.insert(DatabaseContract.RegistrationRequests.TABLE, null, values);
         if (id == -1) {
             return null;

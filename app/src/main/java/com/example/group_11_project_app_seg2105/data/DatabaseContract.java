@@ -81,6 +81,28 @@ public final class DatabaseContract {
         public static final String INDEX_STATUS = "CREATE INDEX IF NOT EXISTS idx_reg_status ON " + TABLE + "(" + STATUS + ")";
     }
 
+    public static class SessionRequests {
+        public static final String TABLE = "session_requests";
+        public static final String ID = "id";
+        public static final String STUDENT_EMAIL = "student_email";
+        public static final String TUTOR_EMAIL = "tutor_email";
+        public static final String DATE = "date";
+        public static final String START = "start_time";
+        public static final String END = "end_time";
+        public static final String STATUS = "status";
+
+        public static final String CREATE =
+                "CREATE TABLE " + TABLE + " (" +
+                        ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        STUDENT_EMAIL + " TEXT, " +
+                        TUTOR_EMAIL + " TEXT, " +
+                        DATE + " TEXT, " +
+                        START + " TEXT, " +
+                        END + " TEXT, " +
+                        STATUS + " TEXT)";
+
+    }
+
     public static final class TutorAvailability {
         public static final String TABLE = "tutor_availability";
         public static final String ID = "id";

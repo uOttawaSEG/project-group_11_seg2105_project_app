@@ -5,6 +5,14 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <!-- Auto Approve Toggle -->
+    <Switch
+        android:id="@+id/switch_auto_approve"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Auto-approve session requests"
+        android:layout_marginBottom="12dp" />
+
     <!-- Date row -->
     <LinearLayout
         android:layout_width="match_parent"
@@ -63,4 +71,5 @@
         android:layout_height="0dp"
         android:layout_marginTop="12dp"
         android:layout_weight="1" />
+
 </LinearLayout>

@@ -1,0 +1,47 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="14dp"
+    android:background="#18212C"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="10dp">
+
+    <TextView
+        android:id="@+id/textStudent"
+        android:text="student@uottawa.ca"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"/>
+
+    <TextView
+        android:id="@+id/textDate"
+        android:text="2025-01-01"
+        android:textColor="#AAAAAA"
+        android:textSize="14sp"/>
+
+    <TextView
+        android:id="@+id/textTime"
+        android:text="12:00 - 12:30"
+        android:textColor="#AAAAAA"
+        android:textSize="14sp"
+        android:layout_marginBottom="8dp"/>
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:gravity="end"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <Button
+            android:id="@+id/btnApprove"
+            android:text="Approve"
+            android:backgroundTint="#1DB954"
+            android:textColor="#FFF"/>
+
+        <Button
+            android:id="@+id/btnReject"
+            android:text="Reject"
+            android:layout_marginStart="10dp"
+            android:backgroundTint="#D32F2F"
+            android:textColor="#FFF"/>
+    </LinearLayout>
+</LinearLayout>

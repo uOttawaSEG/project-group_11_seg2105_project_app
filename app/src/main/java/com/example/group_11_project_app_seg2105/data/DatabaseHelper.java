@@ -230,6 +230,26 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             db.endTransaction();
         }
     }
+    public List<SessionRequest> getPendingSessionRequests(String tutorEmail) {
+        ArrayList<SessionRequest> out = new ArrayList<>();
+        Cursor c = getReadableDatabase().rawQuery(
+                "SELECT id, student_email, tutor_email, date, start, end, status FROM session_requests " +
+                        "WHERE tutor_email=? AND status='PENDING' ORDER BY date, start",
+                new String[]{tutorEmail});
+        while (c.moveToNext()) {
+            out.add(new SessionRequest(
+                    c.getLong(0), c.getString(1), c.getString(2),
+                    c.getString(3), c.getString(4), c.getString(5), c.getString(6)));
+        }
+        c.close();
+        return out;
+    }
+
+    public void updateSessionRequestStatus(long id, String status) {
+        ContentValues cv = new ContentValues();
+        cv.put("status", status);
+        getWritableDatabase().update("session_requests", cv, "id=?", new String[]{String.valueOf(id)});
+    }
 
     public boolean createTutorWithProfile(String email, String password, String first, String last, String phone, String degree, Collection<String> courses) {
         SQLiteDatabase db = getWritableDatabase();

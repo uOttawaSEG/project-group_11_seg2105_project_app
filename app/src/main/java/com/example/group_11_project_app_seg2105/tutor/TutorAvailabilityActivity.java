@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
+import android.widget.Switch;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -14,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.group_11_project_app_seg2105.R;
 import com.example.group_11_project_app_seg2105.data.AvailabilitySlot;
 import com.example.group_11_project_app_seg2105.data.DatabaseHelper;
+import com.example.group_11_project_app_seg2105.data.PrefsUserStore;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -36,8 +38,16 @@ public class TutorAvailabilityActivity extends AppCompatActivity {
 
         db = new DatabaseHelper(this);
 
-        // TODO: Replace with your real session storage if needed
-        tutorEmail = getSharedPreferences("auth", MODE_PRIVATE).getString("email", "tutor@uottawa.ca");
+        // Get the correct tutor email (passed from WelcomeTutorActivity)
+        tutorEmail = getIntent().getStringExtra("email");
+        if (tutorEmail == null) {
+            tutorEmail = getSharedPreferences("auth", MODE_PRIVATE).getString("email", "tutor@uottawa.ca");
+        }
+
+        PrefsUserStore prefs = new PrefsUserStore(this);
+
+        Switch autoSwitch = findViewById(R.id.switch_auto_approve);
+        autoSwitch.setChecked(prefs.getAutoApprove(tutorEmail));
 
         EditText editDate = findViewById(R.id.editDate);
         EditText editStart = findViewById(R.id.editStart);
@@ -65,12 +75,18 @@ public class TutorAvailabilityActivity extends AppCompatActivity {
         });
 
         btnAddSlot.setOnClickListener(v -> {
+
+            // Save auto-approve state when tutor interacts
+            boolean auto = autoSwitch.isChecked();
+            prefs.setAutoApprove(tutorEmail, auto);
+
             String start = editStart.getText().toString().trim();
             String end = editEnd.getText().toString().trim();
             if (start.isEmpty() || end.isEmpty()) {
                 Toast.makeText(this, "Enter start and end", Toast.LENGTH_SHORT).show();
                 return;
             }
+
             long result = db.insertAvailability(new AvailabilitySlot(0, tutorEmail, selectedDate, start, end, false));
             if (result <= 0) Toast.makeText(this, "Invalid or overlapping slot", Toast.LENGTH_SHORT).show();
             else {

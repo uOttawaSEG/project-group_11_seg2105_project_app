@@ -15,8 +15,10 @@ public class User {
     public final String program;
     public final String degree;
     public final List<String> courses;
+    public final boolean autoApprove; // <-- NEW FIELD
 
-    public User(String email, String password, String role, String firstName, String lastName, String phone, String program, String degree, List<String> courses) {
+    // Updated constructor with autoApprove
+    public User(String email, String password, String role, String firstName, String lastName, String phone, String program, String degree, List<String> courses, boolean autoApprove) {
         this.email = Objects.requireNonNull(email);
         this.password = password;
         this.role = role;
@@ -26,13 +28,26 @@ public class User {
         this.program = program;
         this.degree = degree;
         this.courses = courses == null ? Collections.emptyList() : Collections.unmodifiableList(new ArrayList<>(courses));
+        this.autoApprove = autoApprove;
     }
 
+    // Constructor compatibility for older code (default autoApprove = false)
+    public User(String email, String password, String role, String firstName, String lastName, String phone, String program, String degree, List<String> courses) {
+        this(email, password, role, firstName, lastName, phone, program, degree, courses, false);
+    }
+
+    // Existing "with" methods updated to preserve autoApprove
+
     public User withPassword(String value) {
-        return new User(email, value, role, firstName, lastName, phone, program, degree, courses);
+        return new User(email, value, role, firstName, lastName, phone, program, degree, courses, autoApprove);
     }
 
     public User withRole(String value) {
-        return new User(email, password, value, firstName, lastName, phone, program, degree, courses);
+        return new User(email, password, value, firstName, lastName, phone, program, degree, courses, autoApprove);
+    }
+
+    // NEW "builder" method to modify autoApprove safely
+    public User withAutoApprove(boolean value) {
+        return new User(email, password, role, firstName, lastName, phone, program, degree, courses, value);
     }
 }
