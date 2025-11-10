@@ -51,11 +51,19 @@ public class TutorPendingSessionsAdapter extends RecyclerView.Adapter<TutorPendi
 
         h.btnApprove.setOnClickListener(v -> {
             db.updateSessionRequestStatus(r.id, "APPROVED");
+<<<<<<< Updated upstream
+=======
+            SessionEvents.emitStatusChanged(r.id, "APPROVED");
+>>>>>>> Stashed changes
             refreshCallback.run();
         });
 
         h.btnReject.setOnClickListener(v -> {
             db.updateSessionRequestStatus(r.id, "REJECTED");
+<<<<<<< Updated upstream
+=======
+            SessionEvents.emitStatusChanged(r.id, "REJECTED");
+>>>>>>> Stashed changes
             refreshCallback.run();
         });
     }

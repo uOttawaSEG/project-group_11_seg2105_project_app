@@ -68,4 +68,17 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+<<<<<<< Updated upstream
+=======
+    <Button
+        android:id="@+id/btnTutorSessions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Session Lists"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@id/btnPendingSessions"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+>>>>>>> Stashed changes
 </androidx.constraintlayout.widget.ConstraintLayout>
