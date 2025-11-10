@@ -1,25 +1,34 @@
 package com.example.group_11_project_app_seg2105.data;
 
-public class AvailabilitySlot {
-    public long id;
-    public String tutorEmail;
-    public String date;   // YYYY-MM-DD
-    public String start;  // HH:mm
-    public String end;    // HH:mm
-    public boolean autoApprove;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
-    public AvailabilitySlot(long id,
-                            String tutorEmail,
-                            String date,
-                            String start,
-                            String end,
-                            boolean autoApprove) {
+public final class AvailabilitySlot {
+    public final long id;
+    public final String tutorEmail;
+    public final String date;
+    public final String start;
+    public final String end;
+    public final boolean autoApprove;
 
+    public AvailabilitySlot(long id, String tutorEmail, String date, String start, String end, boolean autoApprove) {
         this.id = id;
         this.tutorEmail = tutorEmail;
         this.date = date;
         this.start = start;
         this.end = end;
         this.autoApprove = autoApprove;
+    }
+
+    public LocalDate getDate() {
+        return LocalDate.parse(date);
+    }
+
+    public LocalTime getStart() {
+        return LocalTime.parse(start);
+    }
+
+    public LocalTime getEnd() {
+        return LocalTime.parse(end);
     }
 }
