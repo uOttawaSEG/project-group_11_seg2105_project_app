@@ -245,6 +245,78 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return out;
     }
 
+<<<<<<< Updated upstream
+=======
+    public List<SessionRequest> getAllSessionsForTutor(String tutorEmail) {
+        ArrayList<SessionRequest> out = new ArrayList<>();
+        Cursor c = getReadableDatabase().rawQuery(
+                "SELECT id, student_email, tutor_email, date, start, end, status FROM session_requests " +
+                        "WHERE tutor_email=? ORDER BY date, start",
+                new String[]{tutorEmail});
+        try {
+            while (c.moveToNext()) {
+                out.add(new SessionRequest(
+                        c.getLong(0), c.getString(1), c.getString(2),
+                        c.getString(3), c.getString(4), c.getString(5), c.getString(6)));
+            }
+        } finally {
+            c.close();
+        }
+        return out;
+    }
+
+    public Map<String, StudentProfile> getStudentProfilesByEmails(Collection<String> emails) {
+        Map<String, StudentProfile> map = new HashMap<>();
+        if (emails == null || emails.isEmpty()) return map;
+
+        Set<String> unique = new LinkedHashSet<>();
+        for (String email : emails) {
+            if (email != null && !email.isEmpty()) unique.add(email);
+        }
+        if (unique.isEmpty()) return map;
+
+        StringBuilder placeholdersBuilder = new StringBuilder();
+        String[] args = new String[unique.size()];
+        int index = 0;
+        for (String email : unique) {
+            if (index > 0) placeholdersBuilder.append(',');
+            placeholdersBuilder.append('?');
+            args[index++] = email;
+        }
+
+        Cursor c = getReadableDatabase().query(
+                DatabaseContract.StudentProfiles.TABLE,
+                new String[]{
+                        DatabaseContract.StudentProfiles.EMAIL,
+                        DatabaseContract.StudentProfiles.FIRST,
+                        DatabaseContract.StudentProfiles.LAST,
+                        DatabaseContract.StudentProfiles.PHONE,
+                        DatabaseContract.StudentProfiles.PROGRAM
+                },
+                DatabaseContract.StudentProfiles.EMAIL + " IN (" + placeholdersBuilder + ")",
+                args,
+                null,
+                null,
+                null
+        );
+        try {
+            while (c.moveToNext()) {
+                String email = c.getString(0);
+                map.put(email, new StudentProfile(
+                        email,
+                        c.isNull(1) ? null : c.getString(1),
+                        c.isNull(2) ? null : c.getString(2),
+                        c.isNull(3) ? null : c.getString(3),
+                        c.isNull(4) ? null : c.getString(4)
+                ));
+            }
+        } finally {
+            c.close();
+        }
+        return map;
+    }
+
+>>>>>>> Stashed changes
     public void updateSessionRequestStatus(long id, String status) {
         ContentValues cv = new ContentValues();
         cv.put("status", status);

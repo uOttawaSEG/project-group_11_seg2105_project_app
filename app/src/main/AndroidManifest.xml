@@ -51,6 +51,13 @@
             android:exported="false"
             android:label="Manage Availability"/>
 
+<<<<<<< Updated upstream
+=======
+        <activity
+            android:name=".tutor.TutorSessionsActivity"
+            android:exported="false"
+            android:label="Tutor Sessions"/>
+>>>>>>> Stashed changes
 
     </application>
 </manifest>
