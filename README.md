@@ -56,3 +56,9 @@ Registration status (Pending, Approved, Rejected)
 Testing
 Successful tests in Android Studio Emulator (Pixel 6, API 34).
 APK runs correctly on physical Android devices.
+
+Demo Video:
+https://youtu.be/zZ_mBmMxc2c
+
+UML:
+https://github.com/uOttawaSEG/project-group_11_seg2105_project_app/blob/main/UML%20Diagram%20-%20Deliverable%20%233.pdf

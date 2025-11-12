@@ -101,9 +101,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     private void seedDefaults(SQLiteDatabase db) {
+
         insertUser(db, "admin@uottawa.ca", "admin123", "admin");
         insertUser(db, "student@uottawa.ca", "pass123", "student");
-        insertUser(db, "tutor@uottawa.ca", "teach123", "com/example/group_11_project_app_seg2105/tutor");
+        insertUser(db, "tutor@uottawa.ca", "teach123", "tutor");
+
 
         ContentValues studentProfile = new ContentValues();
         studentProfile.put(DatabaseContract.StudentProfiles.EMAIL, "student@uottawa.ca");
@@ -356,7 +358,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             ContentValues userValues = new ContentValues();
             userValues.put(DatabaseContract.Users.EMAIL, email);
             userValues.put(DatabaseContract.Users.PASSWORD, password);
-            userValues.put(DatabaseContract.Users.ROLE, "com/example/group_11_project_app_seg2105/tutor");
+            userValues.put(DatabaseContract.Users.ROLE, "tutor");
             long userResult = db.insertWithOnConflict(DatabaseContract.Users.TABLE, null, userValues, SQLiteDatabase.CONFLICT_IGNORE);
             if (userResult == -1) return false;
 

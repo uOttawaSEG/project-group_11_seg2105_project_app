@@ -39,12 +39,11 @@ public class RegistrationActivity extends AppCompatActivity {
             titleDropdown.setAdapter(adapter);
             titleDropdown.setOnClickListener(v -> titleDropdown.showDropDown());
             titleDropdown.setOnItemClickListener((parent, view, position, id) -> {
-                String selected = parent.getItemAtPosition(position).toString();
-                if (selected.toLowerCase().contains("tutor")) {
+                String selected = parent.getItemAtPosition(position).toString().toLowerCase();
+                if (selected.contains("tutor")) {
                     startActivity(new Intent(this, TutorRegistrationActivity.class));
                     finish();
                 } else {
-                    // show student form
                     titleDropdown.setText("Student Registration", false);
                 }
             });
@@ -66,8 +65,7 @@ public class RegistrationActivity extends AppCompatActivity {
 
         TextView loginLink = findViewById(R.id.loginLink);
         loginLink.setOnClickListener(v -> {
-            Intent intent = new Intent(RegistrationActivity.this, LoginActivity.class);
-            startActivity(intent);
+            startActivity(new Intent(this, LoginActivity.class));
             overridePendingTransition(android.R.anim.slide_in_left, android.R.anim.slide_out_right);
             finish();
         });
@@ -104,6 +102,7 @@ public class RegistrationActivity extends AppCompatActivity {
         }
 
         try {
+            // ✅ Use simple role string: "student"
             db.saveUser("student", email, password);
 
             boolean success = db.insertFullRegistrationRequest(
@@ -111,7 +110,7 @@ public class RegistrationActivity extends AppCompatActivity {
                     lastName,
                     email,
                     password,
-                    "student",
+                    "student",  // consistent role naming
                     phone,
                     program
             );

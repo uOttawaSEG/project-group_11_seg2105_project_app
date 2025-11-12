@@ -38,10 +38,10 @@ public class TutorAvailabilityActivity extends AppCompatActivity {
 
         db = new DatabaseHelper(this);
 
-        // Get the correct tutor email (passed from WelcomeTutorActivity)
         tutorEmail = getIntent().getStringExtra("email");
-        if (tutorEmail == null) {
-            tutorEmail = getSharedPreferences("auth", MODE_PRIVATE).getString("email", "tutor@uottawa.ca");
+        if (tutorEmail == null || tutorEmail.isEmpty()) {
+            tutorEmail = getSharedPreferences("auth", MODE_PRIVATE)
+                    .getString("email", "tutor@uottawa.ca");
         }
 
         PrefsUserStore prefs = new PrefsUserStore(this);
@@ -65,32 +65,47 @@ public class TutorAvailabilityActivity extends AppCompatActivity {
 
         btnPickDate.setOnClickListener(v -> {
             Calendar c = Calendar.getInstance();
-            DatePickerDialog dialog = new DatePickerDialog(this, (DatePicker view, int y, int m, int d) -> {
-                c.set(y, m, d);
-                selectedDate = ymd.format(c.getTime());
-                editDate.setText(selectedDate);
-                refresh();
-            }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
+            DatePickerDialog dialog = new DatePickerDialog(this,
+                    (DatePicker view, int y, int m, int d) -> {
+                        c.set(y, m, d);
+                        selectedDate = ymd.format(c.getTime());
+                        editDate.setText(selectedDate);
+                        refresh();
+                    },
+                    c.get(Calendar.YEAR),
+                    c.get(Calendar.MONTH),
+                    c.get(Calendar.DAY_OF_MONTH)
+            );
             dialog.show();
         });
 
         btnAddSlot.setOnClickListener(v -> {
-
-            // Save auto-approve state when tutor interacts
             boolean auto = autoSwitch.isChecked();
             prefs.setAutoApprove(tutorEmail, auto);
 
             String start = editStart.getText().toString().trim();
             String end = editEnd.getText().toString().trim();
+
             if (start.isEmpty() || end.isEmpty()) {
-                Toast.makeText(this, "Enter start and end", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Enter both start and end times", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            long result = db.insertAvailability(new AvailabilitySlot(0, tutorEmail, selectedDate, start, end, false));
-            if (result <= 0) Toast.makeText(this, "Invalid or overlapping slot", Toast.LENGTH_SHORT).show();
-            else {
-                Toast.makeText(this, "Added", Toast.LENGTH_SHORT).show();
+            AvailabilitySlot slot = new AvailabilitySlot(
+                    0,
+                    tutorEmail,
+                    selectedDate,
+                    start,
+                    end,
+                    auto
+            );
+
+            long result = db.insertAvailability(slot);
+
+            if (result == -1) {
+                Toast.makeText(this, "Slot already exists or invalid range", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Availability saved", Toast.LENGTH_SHORT).show();
                 refresh();
             }
         });
@@ -99,6 +114,7 @@ public class TutorAvailabilityActivity extends AppCompatActivity {
     }
 
     private void refresh() {
+        if (tutorEmail == null || tutorEmail.isEmpty()) return;
         List<AvailabilitySlot> items = db.getAvailabilityForTutorOnDate(tutorEmail, selectedDate);
         adapter.setData(items);
     }

@@ -2,7 +2,6 @@ package com.example.group_11_project_app_seg2105;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -35,8 +34,7 @@ public class LoginActivity extends AppCompatActivity {
         TextView registerLink = findViewById(R.id.registerLink);
         if (registerLink != null) {
             registerLink.setOnClickListener(v -> {
-                Intent i = new Intent(LoginActivity.this, RegistrationActivity.class);
-                startActivity(i);
+                startActivity(new Intent(this, RegistrationActivity.class));
                 finish();
             });
         }
@@ -56,30 +54,31 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
-        // ✅ CHECK REGISTRATION STATUS BEFORE VALIDATING LOGIN
         RegistrationStatus status = db.getRegistrationStatus(email);
-
         if (status == RegistrationStatus.PENDING) {
             Toast.makeText(this, "Your registration is pending admin approval.", Toast.LENGTH_LONG).show();
             return;
         }
-
         if (status == RegistrationStatus.REJECTED) {
             Toast.makeText(this, "Your registration was rejected. Contact admin.", Toast.LENGTH_LONG).show();
             return;
         }
 
-        // ✅ Now validate password
         if (!db.validateLogin(email, password)) {
             Toast.makeText(this, "Invalid credentials", Toast.LENGTH_SHORT).show();
             return;
         }
 
         String role = db.getUserRole(email);
-        if (role == null) {
+        if (role == null || role.isEmpty()) {
             Toast.makeText(this, "No role found for account", Toast.LENGTH_SHORT).show();
             return;
         }
+
+        // Normalize role if older data used full path
+        if (role.contains("tutor")) role = "tutor";
+        else if (role.contains("student")) role = "student";
+        else if (role.contains("admin")) role = "admin";
 
         Intent next;
         switch (role.toLowerCase()) {
@@ -87,7 +86,7 @@ public class LoginActivity extends AppCompatActivity {
                 next = new Intent(this, WelcomeAdminActivity.class);
                 break;
 
-            case "tutor": // ✅ FIXED TUTOR ROLE
+            case "tutor":
                 next = new Intent(this, WelcomeTutorActivity.class);
                 next.putExtra("email", email);
                 break;
@@ -98,7 +97,7 @@ public class LoginActivity extends AppCompatActivity {
                 break;
 
             default:
-                Toast.makeText(this, "Unknown role: " + role, Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Role not recognized: " + role, Toast.LENGTH_SHORT).show();
                 return;
         }
 
