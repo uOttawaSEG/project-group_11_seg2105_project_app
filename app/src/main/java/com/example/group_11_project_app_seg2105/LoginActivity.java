@@ -56,63 +56,54 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
-        try {
-            Log.d("DB", "Attempting login for: " + email);
+        // ✅ CHECK REGISTRATION STATUS BEFORE VALIDATING LOGIN
+        RegistrationStatus status = db.getRegistrationStatus(email);
 
-            if (!db.validateLogin(email, password)) {
-                Toast.makeText(this, "Invalid credentials", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            RegistrationStatus status = db.getRegistrationStatus(email);
-            if (status == null) {
-                Toast.makeText(this, "Account not yet registered for approval.", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            switch (status) {
-                case PENDING:
-                    Toast.makeText(this, "Your registration is pending admin approval.", Toast.LENGTH_LONG).show();
-                    return;
-                case REJECTED:
-                    Toast.makeText(this, "Your registration was rejected. Contact admin.", Toast.LENGTH_LONG).show();
-                    return;
-                case APPROVED:
-                    break; // continue
-                default:
-                    Toast.makeText(this, "Unknown registration status.", Toast.LENGTH_SHORT).show();
-                    return;
-            }
-
-            String role = db.getUserRole(email);
-            if (role == null) {
-                Toast.makeText(this, "No role found for account", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            Intent next;
-            switch (role.toLowerCase()) {
-                case "admin":
-                    next = new Intent(this, WelcomeAdminActivity.class);
-                    break;
-                case "com/example/group_11_project_app_seg2105/tutor":
-                    next = new Intent(this, WelcomeTutorActivity.class);
-                    break;
-                case "student":
-                    next = new Intent(this, WelcomeStudentActivity.class);
-                    break;
-                default:
-                    Toast.makeText(this, "Unknown role: " + role, Toast.LENGTH_SHORT).show();
-                    return;
-            }
-
-            startActivity(next);
-            finish();
-
-        } catch (Exception e) {
-            Toast.makeText(this, "Login failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
-            Log.e("DB", "Login error", e);
+        if (status == RegistrationStatus.PENDING) {
+            Toast.makeText(this, "Your registration is pending admin approval.", Toast.LENGTH_LONG).show();
+            return;
         }
+
+        if (status == RegistrationStatus.REJECTED) {
+            Toast.makeText(this, "Your registration was rejected. Contact admin.", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        // ✅ Now validate password
+        if (!db.validateLogin(email, password)) {
+            Toast.makeText(this, "Invalid credentials", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String role = db.getUserRole(email);
+        if (role == null) {
+            Toast.makeText(this, "No role found for account", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Intent next;
+        switch (role.toLowerCase()) {
+            case "admin":
+                next = new Intent(this, WelcomeAdminActivity.class);
+                break;
+
+            case "tutor": // ✅ FIXED TUTOR ROLE
+                next = new Intent(this, WelcomeTutorActivity.class);
+                next.putExtra("email", email);
+                break;
+
+            case "student":
+                next = new Intent(this, WelcomeStudentActivity.class);
+                next.putExtra("email", email);
+                break;
+
+            default:
+                Toast.makeText(this, "Unknown role: " + role, Toast.LENGTH_SHORT).show();
+                return;
+        }
+
+        startActivity(next);
+        finish();
     }
 
     private static String safeText(EditText field) {

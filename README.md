@@ -1,64 +1,58 @@
 Group 11
+Team: Mamadou Diallo, Mahdi Hassoun, Atique Aqtab, Kashif Karim, Zachary Yassine, Eren Arikan
 
-Team Members:
-Mamadou Diallo
-Mahdi Hassoun
-Atique Aqtab
-Kashif Karim
-Zachary Yassine
-Eren Arikan
+Accounts for Testing
 
-Administrator Account (for testing):
+Administrator:
 Email: admin@uottawa.ca
-
 Password: admin123
 
-Sample Tutor Account:
+Sample Tutor:
 Email: tutor@uottawa.ca
-
 Password: teach123
 
-Sample Student Account:
+Sample Student:
 Email: student@uottawa.ca
-
 Password: pass123
 
-How to Run:
+How to Run
+Install the Project_Group_11_debug.apk on an Android device or emulator (Android 10+).
+Launch the app.
+Sign in using one of the accounts above or register a new Student or Tutor account.
+The app stores data in SQLite on the device.
+The Administrator account loads automatically at first launch.
 
-Download the APK attached in this GitHub release: Project_Group_11_debug.apk
-Install it on an Android device or emulator (Android 10+).
-Launch the app and log in as Administrator, Tutor, or Student once accounts exist.
+Implemented Features
+Registration and Login
+Student and Tutor registration forms with input validation.
+Every new Student or Tutor enters a pending state after registration.
 
-Implemented Features:
+Login reflects registration status:
+Approved: user reaches their dashboard.
+Pending: user receives a pending message.
+Rejected: user receives a rejection message and contact notice.
+Administrator Dashboard
+Inbox displays all pending registrations.
+Admin views all submitted user info (no passwords).
+Admin approves or rejects requests.
+A Rejected Requests screen displays previously rejected users.
+Admin re-approves rejected users.
 
-Student and Tutor registration with InputValidator.
-Registration requests saved with PENDING status in SQLite.
-Admin approval system for reviewing and approving or rejecting pending requests.
-Rejected Requests Activity to re-approve previously rejected users.
-Email intent integration (Bonus): admin actions open Gmail with a pre-filled message for the user.
-Role-based login and navigation (Admin → Dashboard, Tutor → WelcomeTutor, Student → WelcomeStudent).
-SQLite database storing all user information, roles, and registration statuses.
-Logout functionality for all user roles.
+Role Navigation
+Admin → Admin Dashboard
+Tutor → Tutor Welcome Screen
+Student → Student Welcome Screen
+Logout available for all roles.
 
-A demo video showing:
+Bonus Feature
+When the Admin approves or rejects a request, Gmail opens with a pre-filled message addressed to the user.
+Database
 
-Student and Tutor registration process
-Admin approval and rejected request handling
-Re-approval of rejected users
-Email intent launching upon admin action
-Role-based login and logout
-SQLite data evidence
-(Video attached in this release)
+SQLite stores:
+Users
+Roles
+Registration status (Pending, Approved, Rejected)
 
-You can view our Deliverable 2 demo here:
-https://youtu.be/qGH-HmAW7L0
-
-UML(https://github.com/uOttawaSEG/project-group_11_seg2105_project_app/blob/main/UML%20Diagram%20-%20Deliverable%20%232%20SEG-1.pdf)
-
-Notes:
-
-All data is stored locally using SQLite.
-Admin credentials are automatically seeded at app startup.
-Tested successfully on Android Studio Emulator (Pixel 6, API 34).
-
-Bonus feature (email intent) implemented and functional.
+Testing
+Successful tests in Android Studio Emulator (Pixel 6, API 34).
+APK runs correctly on physical Android devices.

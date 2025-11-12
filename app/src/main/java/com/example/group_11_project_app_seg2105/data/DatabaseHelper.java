@@ -12,6 +12,11 @@ import androidx.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.LinkedHashSet;
+
 
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String TAG = "DB";
@@ -37,11 +42,23 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(DatabaseContract.TutorAvailability.CREATE);
         db.execSQL(DatabaseContract.TutorAvailability.INDEX_TUTOR_DATE);
 
+        // Add this ↓↓↓
+        db.execSQL(
+                "CREATE TABLE IF NOT EXISTS session_requests (" +
+                        "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        "student_email TEXT NOT NULL, " +
+                        "tutor_email TEXT NOT NULL, " +
+                        "date TEXT NOT NULL, " +
+                        "start TEXT NOT NULL, " +
+                        "end TEXT NOT NULL, " +
+                        "status TEXT NOT NULL" +
+                        ");"
+        );
+
         seedDefaults(db);
         seedPart4Rejected(db);
         ensureAdminApproved(db);
     }
-
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         if (oldVersion < 2) db.execSQL(DatabaseContract.StudentProfiles.CREATE);
@@ -62,6 +79,19 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             db.execSQL(DatabaseContract.TutorAvailability.INDEX_TUTOR_DATE);
         }
         ensureAdminApproved(db);
+        if (oldVersion < 8) {  // pick any number higher than current DatabaseContract.VERSION
+            db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS session_requests (" +
+                            "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                            "student_email TEXT NOT NULL, " +
+                            "tutor_email TEXT NOT NULL, " +
+                            "date TEXT NOT NULL, " +
+                            "start TEXT NOT NULL, " +
+                            "end TEXT NOT NULL, " +
+                            "status TEXT NOT NULL" +
+                            ");"
+            );
+        }
     }
 
     private void ensureColumn(SQLiteDatabase db, String table, String column) {
@@ -245,8 +275,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return out;
     }
 
-<<<<<<< Updated upstream
-=======
     public List<SessionRequest> getAllSessionsForTutor(String tutorEmail) {
         ArrayList<SessionRequest> out = new ArrayList<>();
         Cursor c = getReadableDatabase().rawQuery(
@@ -315,8 +343,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
         return map;
     }
-
->>>>>>> Stashed changes
     public void updateSessionRequestStatus(long id, String status) {
         ContentValues cv = new ContentValues();
         cv.put("status", status);
@@ -599,4 +625,31 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         c.close();
         return exists;
     }
+    public List<User> getUsersByRole(String role) {
+        ArrayList<User> out = new ArrayList<>();
+        Cursor c = getReadableDatabase().rawQuery(
+                "SELECT u.email, " +
+                        "COALESCE(s.first_name, t.first_name) AS first_name, " +
+                        "COALESCE(s.last_name,  t.last_name)  AS last_name " +
+                        "FROM users u " +
+                        "LEFT JOIN student_profiles s ON u.email=s.email " +
+                        "LEFT JOIN tutor_profiles   t ON u.email=t.email " +
+                        "WHERE u.role=? " +
+                        "ORDER BY first_name, last_name",
+                new String[]{role}
+        );
+        try {
+            while (c.moveToNext()) {
+                out.add(new User(
+                        c.getString(0),      // email
+                        c.getString(1),      // first
+                        c.getString(2)       // last
+                ));
+            }
+        } finally {
+            c.close();
+        }
+        return out;
+    }
+
 }

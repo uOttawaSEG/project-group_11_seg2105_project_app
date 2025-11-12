@@ -74,4 +74,12 @@ public class PrefsUserStore {
         }
         return true;
     }
+    public boolean getAutoApprove(String email) {
+        return prefs.getBoolean("autoApprove_" + email, false);
+    }
+
+    public void setAutoApprove(String email, boolean value) {
+        prefs.edit().putBoolean("autoApprove_" + email, value).apply();
+    }
+
 }
