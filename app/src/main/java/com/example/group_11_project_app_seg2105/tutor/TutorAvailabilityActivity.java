@@ -1,5 +1,6 @@
 package com.example.group_11_project_app_seg2105.tutor;
 
+import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.widget.Button;
@@ -16,6 +17,7 @@ import com.example.group_11_project_app_seg2105.R;
 import com.example.group_11_project_app_seg2105.data.AvailabilitySlot;
 import com.example.group_11_project_app_seg2105.data.DatabaseHelper;
 import com.example.group_11_project_app_seg2105.data.PrefsUserStore;
+import com.example.group_11_project_app_seg2105.data.SessionRequest;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -57,12 +59,20 @@ public class TutorAvailabilityActivity extends AppCompatActivity {
 
         RecyclerView recycler = findViewById(R.id.recyclerSlots);
         recycler.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new AvailabilityAdapter(db, tutorEmail, this::refresh);
+
+        adapter = new AvailabilityAdapter(
+                db,
+                tutorEmail,
+                this::refresh,
+                this::confirmDeleteSlot        // <-- NEW CALLBACK FOR SAFE DELETE
+        );
+
         recycler.setAdapter(adapter);
 
         selectedDate = ymd.format(Calendar.getInstance().getTime());
         editDate.setText(selectedDate);
 
+        // Pick date
         btnPickDate.setOnClickListener(v -> {
             Calendar c = Calendar.getInstance();
             DatePickerDialog dialog = new DatePickerDialog(this,
@@ -79,6 +89,7 @@ public class TutorAvailabilityActivity extends AppCompatActivity {
             dialog.show();
         });
 
+        // Add new slot
         btnAddSlot.setOnClickListener(v -> {
             boolean auto = autoSwitch.isChecked();
             prefs.setAutoApprove(tutorEmail, auto);
@@ -113,9 +124,60 @@ public class TutorAvailabilityActivity extends AppCompatActivity {
         refresh();
     }
 
+    // REFRESH THE LIST
     private void refresh() {
         if (tutorEmail == null || tutorEmail.isEmpty()) return;
         List<AvailabilitySlot> items = db.getAvailabilityForTutorOnDate(tutorEmail, selectedDate);
         adapter.setData(items);
+    }
+
+    // ================= PART 5: SAFE DELETE =================
+
+    private void confirmDeleteSlot(int slotId) {
+
+        new AlertDialog.Builder(this)
+                .setTitle("Delete Availability")
+                .setMessage("Are you sure you want to delete this availability slot?")
+                .setPositiveButton("Delete", (d, w) -> attemptDeleteSlot(slotId))
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void attemptDeleteSlot(int slotId) {
+
+        // 1. Get all session requests for the slot
+        List<SessionRequest> requests = db.getRequestsBySlot(slotId);
+
+        boolean hasBlockingSessions = false;
+
+        for (SessionRequest req : requests) {
+            String status = req.getStatus();
+            if (status.equalsIgnoreCase("pending") || status.equalsIgnoreCase("approved")) {
+                hasBlockingSessions = true;
+                break;
+            }
+        }
+
+        // 2. Block deletion if there are booked sessions
+        if (hasBlockingSessions) {
+
+            new AlertDialog.Builder(this)
+                    .setTitle("Cannot Delete Slot")
+                    .setMessage("This slot cannot be deleted because a student has already booked this session.")
+                    .setPositiveButton("OK", null)
+                    .show();
+
+            return;
+        }
+
+        // 3. If no blocking bookings, delete normally
+        boolean deleted = db.deleteAvailabilitySlot(slotId);
+
+        if (deleted) {
+            Toast.makeText(this, "Availability deleted", Toast.LENGTH_SHORT).show();
+            refresh();
+        } else {
+            Toast.makeText(this, "Failed to delete slot", Toast.LENGTH_SHORT).show();
+        }
     }
 }

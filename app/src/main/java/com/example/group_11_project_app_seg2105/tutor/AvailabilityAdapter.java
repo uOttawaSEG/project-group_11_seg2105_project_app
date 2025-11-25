@@ -1,6 +1,5 @@
 package com.example.group_11_project_app_seg2105.tutor;
 
-import android.app.AlertDialog;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,12 +21,23 @@ public class AvailabilityAdapter extends RecyclerView.Adapter<AvailabilityAdapte
     private final List<AvailabilitySlot> list = new ArrayList<>();
     private final DatabaseHelper db;
     private final String tutorEmail;
-    private final Runnable onChange; // callback to refresh activity
+    private final Runnable onChange;           // refresh callback
+    private final DeleteCallback deleteCallback;  // NEW CALLBACK for safe delete
 
-    public AvailabilityAdapter(DatabaseHelper db, String tutorEmail, Runnable onChange) {
+    public interface DeleteCallback {
+        void onRequestDelete(int slotId);
+    }
+
+    public AvailabilityAdapter(
+            DatabaseHelper db,
+            String tutorEmail,
+            Runnable onChange,
+            DeleteCallback deleteCallback
+    ) {
         this.db = db;
         this.tutorEmail = tutorEmail;
         this.onChange = onChange;
+        this.deleteCallback = deleteCallback;
     }
 
     public void setData(List<AvailabilitySlot> newData) {
@@ -47,23 +57,17 @@ public class AvailabilityAdapter extends RecyclerView.Adapter<AvailabilityAdapte
     @Override
     public void onBindViewHolder(@NonNull ViewHolder h, int position) {
         AvailabilitySlot s = list.get(position);
+
         h.txtTime.setText(s.start + " - " + s.end);
         h.txtDate.setText(s.date);
 
+        // ========================
+        // PART 5 — HANDLE DELETE THROUGH ACTIVITY
+        // ========================
         h.btnDelete.setOnClickListener(v -> {
-            new AlertDialog.Builder(v.getContext())
-                    .setTitle("Delete Slot")
-                    .setMessage("Delete " + s.start + " - " + s.end + " on " + s.date + "?")
-                    .setPositiveButton("Delete", (d, w) -> {
-                        boolean ok = db.deleteAvailability(s.id, tutorEmail);
-                        if (ok) {
-                            list.remove(position);
-                            notifyItemRemoved(position);
-                            onChange.run(); // activity refresh
-                        }
-                    })
-                    .setNegativeButton("Cancel", null)
-                    .show();
+            if (deleteCallback != null) {
+                deleteCallback.onRequestDelete(s.id);  // send slotId to activity
+            }
         });
     }
 
