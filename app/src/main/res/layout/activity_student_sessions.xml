@@ -47,6 +47,28 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:visibility="gone"
-        app:layout_constraint
+        app:layout_constraintTop_toBottomOf="@+id/subtitleText"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="No sessions yet."
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="@color/p4_text_primary"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Book a time slot to see it here."
+            android:textSize="13sp"
+            android:textColor="@color/p4_text_secondary"
+            android:layout_marginTop="4dp"/>
+
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
