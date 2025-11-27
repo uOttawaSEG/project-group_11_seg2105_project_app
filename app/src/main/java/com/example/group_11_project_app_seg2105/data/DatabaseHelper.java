@@ -351,6 +351,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         getWritableDatabase().update("session_requests", cv, "id=?", new String[]{String.valueOf(id)});
     }
 
+    public long insertSessionRequest(String studentEmail, String tutorEmail, String date, String start, String end, String status) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("student_email", studentEmail);
+        cv.put("tutor_email", tutorEmail);
+        cv.put("date", date);
+        cv.put("start", start);
+        cv.put("end", end);
+        cv.put("status", status); // usually "PENDING" (or "APPROVED" if auto-approve logic is used)
+
+        return db.insert("session_requests", null, cv);
+    
+    }
+
     public boolean createTutorWithProfile(String email, String password, String first, String last, String phone, String degree, Collection<String> courses) {
         SQLiteDatabase db = getWritableDatabase();
         db.beginTransaction();
@@ -653,5 +667,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
         return out;
     }
+
+
 
 }
