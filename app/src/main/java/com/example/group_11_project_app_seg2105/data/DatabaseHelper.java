@@ -265,30 +265,29 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public List<SessionRequest> getPendingSessionRequests(String tutorEmail) {
         ArrayList<SessionRequest> out = new ArrayList<>();
         Cursor c = getReadableDatabase().rawQuery(
-                "SELECT id, slot_id, student_email, tutor_email, date, start, \"end\", status FROM session_requests " +
+                "SELECT id, student_email, tutor_email, date, start, end, status FROM session_requests " +
                         "WHERE tutor_email=? AND status='PENDING' ORDER BY date, start",
                 new String[]{tutorEmail});
         while (c.moveToNext()) {
             out.add(new SessionRequest(
-                    c.getLong(0), c.getLong(1), c.getString(2),
-                    c.getString(3), c.getString(4), c.getString(5), c.getString(6), c.getString(7)));
+                    c.getLong(0), c.getString(1), c.getString(2),
+                    c.getString(3), c.getString(4), c.getString(5), c.getString(6)));
         }
         c.close();
         return out;
     }
 
-
     public List<SessionRequest> getAllSessionsForTutor(String tutorEmail) {
         ArrayList<SessionRequest> out = new ArrayList<>();
         Cursor c = getReadableDatabase().rawQuery(
-                "SELECT id, slot_id, student_email, tutor_email, date, start, \"end\", status FROM session_requests " +
+                "SELECT id, student_email, tutor_email, date, start, end, status FROM session_requests " +
                         "WHERE tutor_email=? ORDER BY date, start",
                 new String[]{tutorEmail});
         try {
             while (c.moveToNext()) {
                 out.add(new SessionRequest(
-                        c.getLong(0), c.getLong(1), c.getString(2),
-                        c.getString(3), c.getString(4), c.getString(5), c.getString(6), c.getString(7)));
+                        c.getLong(0), c.getString(1), c.getString(2),
+                        c.getString(3), c.getString(4), c.getString(5), c.getString(6)));
             }
         } finally {
             c.close();
