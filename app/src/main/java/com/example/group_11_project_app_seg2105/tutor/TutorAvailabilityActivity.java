@@ -133,7 +133,7 @@ public class TutorAvailabilityActivity extends AppCompatActivity {
 
     // ================= PART 5: SAFE DELETE =================
 
-    private void confirmDeleteSlot(int slotId) {
+    private void confirmDeleteSlot(long slotId) {
 
         new AlertDialog.Builder(this)
                 .setTitle("Delete Availability")
@@ -143,7 +143,7 @@ public class TutorAvailabilityActivity extends AppCompatActivity {
                 .show();
     }
 
-    private void attemptDeleteSlot(int slotId) {
+    private void attemptDeleteSlot(long slotId) {
 
         // 1. Get all session requests for the slot
         List<SessionRequest> requests = db.getRequestsBySlot(slotId);
@@ -151,7 +151,7 @@ public class TutorAvailabilityActivity extends AppCompatActivity {
         boolean hasBlockingSessions = false;
 
         for (SessionRequest req : requests) {
-            String status = req.getStatus();
+            String status = req.status;
             if (status.equalsIgnoreCase("pending") || status.equalsIgnoreCase("approved")) {
                 hasBlockingSessions = true;
                 break;

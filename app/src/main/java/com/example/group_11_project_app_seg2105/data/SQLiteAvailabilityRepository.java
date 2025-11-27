@@ -163,28 +163,21 @@ public class SQLiteAvailabilityRepository implements AvailabilityRepository {
 
     @Override
     public boolean canDelete(int slotId) {
+        // Reuse existing logic in DatabaseHelper that matches by tutor/date/time
+        List<SessionRequest> requests = helper.getRequestsBySlot(slotId);
 
-        SQLiteDatabase db = helper.getReadableDatabase();
-
-        try (Cursor cursor = db.query(
-                DatabaseContract.SessionRequests.TABLE,
-                new String[]{ DatabaseContract.SessionRequests.STATUS },
-                DatabaseContract.SessionRequests.SLOT_ID + " = ?",
-                new String[]{ String.valueOf(slotId) },
-                null, null, null
-        )) {
-            while (cursor.moveToNext()) {
-                String status = cursor.getString(0);
-
-                if ("pending".equalsIgnoreCase(status) ||
-                        "approved".equalsIgnoreCase(status)) {
-                    return false; // block delete
-                }
+        for (SessionRequest req : requests) {
+            String status = req.status;   // or req.status() if it's a record
+            if ("PENDING".equalsIgnoreCase(status) ||
+                    "APPROVED".equalsIgnoreCase(status)) {
+                return false;  // block delete
             }
         }
 
         return true; // safe to delete
     }
+
+
 
     @Override
     public boolean deleteById(int slotId) {

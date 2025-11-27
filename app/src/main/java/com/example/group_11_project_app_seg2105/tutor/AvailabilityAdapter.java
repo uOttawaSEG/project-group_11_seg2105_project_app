@@ -25,7 +25,7 @@ public class AvailabilityAdapter extends RecyclerView.Adapter<AvailabilityAdapte
     private final DeleteCallback deleteCallback;  // NEW CALLBACK for safe delete
 
     public interface DeleteCallback {
-        void onRequestDelete(int slotId);
+        void onRequestDelete(long slotId);
     }
 
     public AvailabilityAdapter(
