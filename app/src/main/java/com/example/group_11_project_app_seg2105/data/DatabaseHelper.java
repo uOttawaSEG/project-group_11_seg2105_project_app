@@ -362,7 +362,32 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         cv.put("status", status); // usually "PENDING" (or "APPROVED" if auto-approve logic is used)
 
         return db.insert("session_requests", null, cv);
-    
+
+    }
+
+    public List<SessionRequest> getSessionsForStudent(String studentEmail) {
+        ArrayList<SessionRequest> out = new ArrayList<>();
+
+        Cursor c = getReadableDatabase().rawQuery(
+                "SELECT id, student_email, tutor_email, date, start, end, status " +
+                        "FROM session_requests " +
+                        "WHERE student_email=? " +
+                        "ORDER BY date, DESC, start DESC",
+                new String[]{studentEmail}
+        );
+
+        try {
+            while (c.moveToNext()) {
+                out.add(new SessionRequest(
+                        c.getLong(0), c.getString(1), c.getString(2),
+                        c.getString(3), c.getString(4), c.getString(5), c.getString(6)
+                ));
+            }
+        } finally {
+            c.close();
+        }
+        return out;
+
     }
 
     public boolean createTutorWithProfile(String email, String password, String first, String last, String phone, String degree, Collection<String> courses) {
