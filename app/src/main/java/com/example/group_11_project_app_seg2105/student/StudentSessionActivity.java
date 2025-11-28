@@ -2,7 +2,6 @@ package com.example.group_11_project_app_seg2105.student;
 
 import android.os.Bundle;
 import android.view.View;
-import android.widget.LinearLayout;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -16,12 +15,12 @@ import com.example.group_11_project_app_seg2105.data.SessionRequest;
 import java.util.ArrayList;
 import java.util.List;
 
-public class StudentSessionsActivity extends AppCompatActivity {
+public class StudentSessionActivity extends AppCompatActivity {
 
     public static final String EXTRA_STUDENT_EMAIL = "student_email";
 
     private DatabaseHelper db;
-    private StudentSessionAdapter adapter;
+    private StudentSessionsAdapter adapter;
     private RecyclerView recycler;
     private View emptyState;
 
@@ -35,7 +34,7 @@ public class StudentSessionsActivity extends AppCompatActivity {
         emptyState = findViewById(R.id.emptyState);
 
         recycler.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new StudentSessionAdapter(new ArrayList<>());
+        adapter = new StudentSessionsAdapter(new ArrayList<>());
         recycler.setAdapter(adapter);
 
     }
@@ -50,13 +49,13 @@ public class StudentSessionsActivity extends AppCompatActivity {
         String studentEmail = getIntent().getStringExtra(EXTRA_STUDENT_EMAIL);
         if(studentEmail == null) {
             // fallback - no email passed, show empty
-            adapter.submit(new ArrayList<>());
+            adapter.setData(new ArrayList<>());
             updateState(0);
             return;
         }
 
         List<SessionRequest> sessions = db.getSessionsForStudent(studentEmail);
-        adapter.submit(sessions);
+        adapter.setData(sessions);
         updateState(sessions.size());
     }
 

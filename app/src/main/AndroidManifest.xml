@@ -66,9 +66,14 @@
             android:exported="false"
             android:label="Pending Session Requests" />
 
+        <!-- Student screens -->
         <activity
-            android:name=".student.StudentSessionsActivity"
+            android:name=".student.StudentSessionActivity"
             android:exported="false" />
+
+        <activity android:name=".student.StudentBookSessionActivity" />
+        <activity android:name=".student.StudentViewSessionsActivity" />
+
 
     </application>
 </manifest>
