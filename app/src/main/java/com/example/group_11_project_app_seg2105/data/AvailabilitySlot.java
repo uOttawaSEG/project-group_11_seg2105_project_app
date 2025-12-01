@@ -3,6 +3,13 @@ package com.example.group_11_project_app_seg2105.data;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+/**
+ * Immutable value object representing a single availability slot for a tutor.
+ * Each slot records the owning tutor's email, the date and start/end times
+ * along with an auto-approval flag indicating whether booking requests are
+ * automatically approved or require tutor action. Slots are identified
+ * internally by a generated numeric ID.
+ */
 public final class AvailabilitySlot {
     public final long id;
     public final String tutorEmail;

@@ -9,6 +9,13 @@ import com.example.group_11_project_app_seg2105.core.validation.AvailabilityVali
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * SQLite-backed implementation of {@link AvailabilityRepository}. This class
+ * encapsulates all persistence logic related to tutor availability slots and
+ * ensures that slots are created only if they pass validation and do not
+ * conflict with existing entries. It also prevents deletion of slots that
+ * have pending or approved session requests.
+ */
 public class SQLiteAvailabilityRepository implements AvailabilityRepository {
 
     private static final String TABLE = DatabaseContract.TutorAvailability.TABLE;
@@ -16,42 +23,22 @@ public class SQLiteAvailabilityRepository implements AvailabilityRepository {
 
     public SQLiteAvailabilityRepository(DatabaseHelper helper) {
         this.helper = helper;
-
+        // Ensure table and index exist. While DatabaseHelper.onCreate and
+        // onUpgrade should create these, calling them here is defensive and
+        // allows the repository to operate even if the application is upgraded
+        // without bumping the database version.
         SQLiteDatabase db = helper.getWritableDatabase();
-
-        db.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE + " (" +
-                DatabaseContract.TutorAvailability.ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                DatabaseContract.TutorAvailability.TUTOR_EMAIL + " TEXT NOT NULL, " +
-                DatabaseContract.TutorAvailability.DATE + " TEXT NOT NULL, " +
-                DatabaseContract.TutorAvailability.START + " TEXT NOT NULL, " +
-                DatabaseContract.TutorAvailability.END + " TEXT NOT NULL, " +
-                DatabaseContract.TutorAvailability.AUTO_APPROVE + " INTEGER NOT NULL DEFAULT 0, " +
-                "FOREIGN KEY(" + DatabaseContract.TutorAvailability.TUTOR_EMAIL + ") REFERENCES " +
-                DatabaseContract.Users.TABLE + "(" + DatabaseContract.Users.EMAIL + ") ON DELETE CASCADE)"
-        );
-
-        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_tutor_availability_unique ON " +
-                TABLE + " (" +
-                DatabaseContract.TutorAvailability.TUTOR_EMAIL + ", " +
-                DatabaseContract.TutorAvailability.DATE + ", " +
-                DatabaseContract.TutorAvailability.START + ", " +
-                DatabaseContract.TutorAvailability.END + ")"
-        );
+        db.execSQL(DatabaseContract.TutorAvailability.CREATE);
+        db.execSQL(DatabaseContract.TutorAvailability.INDEX_TUTOR_DATE);
     }
-
-    // ============================================================
-    // CREATE
-    // ============================================================
 
     @Override
     public boolean create(String tutorEmail, String date, String start, String end) {
-
+        // Validate new slot against existing slots for the tutor on that date
         List<AvailabilitySlot> existing = findByTutorAndDate(tutorEmail, date);
-
         if (!AvailabilityValidator.isValid(date, start, end, existing)) {
             return false;
         }
-
         SQLiteDatabase db = helper.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(DatabaseContract.TutorAvailability.TUTOR_EMAIL, tutorEmail);
@@ -59,20 +46,14 @@ public class SQLiteAvailabilityRepository implements AvailabilityRepository {
         values.put(DatabaseContract.TutorAvailability.START, start);
         values.put(DatabaseContract.TutorAvailability.END, end);
         values.put(DatabaseContract.TutorAvailability.AUTO_APPROVE, 0);
-
         long result = db.insert(TABLE, null, values);
         return result != -1;
     }
-
-    // ============================================================
-    // FIND METHODS
-    // ============================================================
 
     @Override
     public List<AvailabilitySlot> findByTutorAndDate(String tutorEmail, String date) {
         SQLiteDatabase db = helper.getReadableDatabase();
         List<AvailabilitySlot> slots = new ArrayList<>();
-
         try (Cursor cursor = db.query(
                 TABLE,
                 new String[]{
@@ -85,7 +66,7 @@ public class SQLiteAvailabilityRepository implements AvailabilityRepository {
                 },
                 DatabaseContract.TutorAvailability.TUTOR_EMAIL + " = ? AND " +
                         DatabaseContract.TutorAvailability.DATE + " = ?",
-                new String[]{tutorEmail, date},
+                new String[]{ tutorEmail, date },
                 null, null,
                 DatabaseContract.TutorAvailability.START + " ASC"
         )) {
@@ -93,14 +74,12 @@ public class SQLiteAvailabilityRepository implements AvailabilityRepository {
                 long id = cursor.getLong(0);
                 String email = cursor.getString(1);
                 String d = cursor.getString(2);
-                String start = cursor.getString(3);
-                String end = cursor.getString(4);
-                boolean autoApprove = cursor.getInt(5) != 0;
-
-                slots.add(new AvailabilitySlot(id, email, d, start, end, autoApprove));
+                String s = cursor.getString(3);
+                String e = cursor.getString(4);
+                boolean auto = cursor.getInt(5) != 0;
+                slots.add(new AvailabilitySlot(id, email, d, s, e, auto));
             }
         }
-
         return slots;
     }
 
@@ -108,7 +87,6 @@ public class SQLiteAvailabilityRepository implements AvailabilityRepository {
     public List<AvailabilitySlot> findByTutor(String tutorEmail) {
         SQLiteDatabase db = helper.getReadableDatabase();
         List<AvailabilitySlot> slots = new ArrayList<>();
-
         try (Cursor cursor = db.query(
                 TABLE,
                 new String[]{
@@ -120,7 +98,7 @@ public class SQLiteAvailabilityRepository implements AvailabilityRepository {
                         DatabaseContract.TutorAvailability.AUTO_APPROVE
                 },
                 DatabaseContract.TutorAvailability.TUTOR_EMAIL + " = ?",
-                new String[]{tutorEmail},
+                new String[]{ tutorEmail },
                 null, null,
                 DatabaseContract.TutorAvailability.DATE + " ASC, " +
                         DatabaseContract.TutorAvailability.START + " ASC"
@@ -129,68 +107,52 @@ public class SQLiteAvailabilityRepository implements AvailabilityRepository {
                 long id = cursor.getLong(0);
                 String email = cursor.getString(1);
                 String d = cursor.getString(2);
-                String start = cursor.getString(3);
-                String end = cursor.getString(4);
-                boolean autoApprove = cursor.getInt(5) != 0;
-
-                slots.add(new AvailabilitySlot(id, email, d, start, end, autoApprove));
+                String s = cursor.getString(3);
+                String e = cursor.getString(4);
+                boolean auto = cursor.getInt(5) != 0;
+                slots.add(new AvailabilitySlot(id, email, d, s, e, auto));
             }
         }
-
         return slots;
     }
 
-    // ============================================================
-    // OLD DELETE (still required, but not used directly anymore)
-    // ============================================================
-
     @Override
     public boolean delete(AvailabilitySlot slot) {
-        SQLiteDatabase db = helper.getWritableDatabase();
-
-        int rows = db.delete(
-                TABLE,
-                DatabaseContract.TutorAvailability.ID + " = ?",
-                new String[]{String.valueOf(slot.id)}
-        );
-
-        return rows > 0;
+        return deleteById((int) slot.id);
     }
-
-    // ============================================================
-    // PART 5 — SAFE DELETE SUPPORT
-    // ============================================================
 
     @Override
     public boolean canDelete(int slotId) {
-        // Reuse existing logic in DatabaseHelper that matches by tutor/date/time
-        List<SessionRequest> requests = helper.getRequestsBySlot(slotId);
-
-        for (SessionRequest req : requests) {
-            String status = req.status;   // or req.status() if it's a record
-            if ("PENDING".equalsIgnoreCase(status) ||
-                    "APPROVED".equalsIgnoreCase(status)) {
-                return false;  // block delete
+        SQLiteDatabase db = helper.getReadableDatabase();
+        try (Cursor cursor = db.query(
+                DatabaseContract.SessionRequests.TABLE,
+                new String[]{ DatabaseContract.SessionRequests.STATUS },
+                DatabaseContract.SessionRequests.SLOT_ID + " = ?",
+                new String[]{ String.valueOf(slotId) },
+                null, null, null
+        )) {
+            while (cursor.moveToNext()) {
+                String status = cursor.getString(0);
+                if ("PENDING".equalsIgnoreCase(status) ||
+                        "APPROVED".equalsIgnoreCase(status)) {
+                    return false;
+                }
             }
         }
-
-        return true; // safe to delete
+        return true;
     }
-
-
 
     @Override
     public boolean deleteById(int slotId) {
-        if (!canDelete(slotId)) return false;
-
+        if (!canDelete(slotId)) {
+            return false;
+        }
         SQLiteDatabase db = helper.getWritableDatabase();
-
         int rows = db.delete(
                 TABLE,
                 DatabaseContract.TutorAvailability.ID + " = ?",
-                new String[]{String.valueOf(slotId)}
+                new String[]{ String.valueOf(slotId) }
         );
-
         return rows > 0;
     }
 }

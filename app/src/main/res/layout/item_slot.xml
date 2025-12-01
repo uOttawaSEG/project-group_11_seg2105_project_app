@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Item layout used by SlotAdapter to display a single tutor availability
+     slot. The top line shows the tutor's full name and rating. The second
+     line shows the course, date, time range and auto-approval flag.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <TextView
+        android:id="@+id/tutorNameRating"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:text="Tutor (Rating: 0.0)" />
+
+    <TextView
+        android:id="@+id/slotDetails"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Course: ??? | Date: yyyy-mm-dd | Time: hh:mm-hh:mm | Auto: No" />
+
+</LinearLayout>
