@@ -7,7 +7,7 @@ public class SessionRequest {
     public final String date;
     public final String start;
     public final String end;
-    public final String status; // PENDING, APPROVED, REJECTED
+    public final String status; // PENDING, APPROVED, REJECTED, CANCELLED
 
     public SessionRequest(long id, String studentEmail, String tutorEmail,
                           String date, String start, String end, String status) {

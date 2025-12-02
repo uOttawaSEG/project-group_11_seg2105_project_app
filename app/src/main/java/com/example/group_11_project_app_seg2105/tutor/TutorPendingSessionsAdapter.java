@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.group_11_project_app_seg2105.R;
 import com.example.group_11_project_app_seg2105.data.DatabaseHelper;
 import com.example.group_11_project_app_seg2105.data.SessionRequest;
+import com.example.group_11_project_app_seg2105.sessions.SessionEvents;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,19 +52,13 @@ public class TutorPendingSessionsAdapter extends RecyclerView.Adapter<TutorPendi
 
         h.btnApprove.setOnClickListener(v -> {
             db.updateSessionRequestStatus(r.id, "APPROVED");
-<<<<<<< Updated upstream
-=======
             SessionEvents.emitStatusChanged(r.id, "APPROVED");
->>>>>>> Stashed changes
             refreshCallback.run();
         });
 
         h.btnReject.setOnClickListener(v -> {
             db.updateSessionRequestStatus(r.id, "REJECTED");
-<<<<<<< Updated upstream
-=======
             SessionEvents.emitStatusChanged(r.id, "REJECTED");
->>>>>>> Stashed changes
             refreshCallback.run();
         });
     }

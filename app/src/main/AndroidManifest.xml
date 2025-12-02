@@ -51,13 +51,26 @@
             android:exported="false"
             android:label="Manage Availability"/>
 
-<<<<<<< Updated upstream
-=======
         <activity
             android:name=".tutor.TutorSessionsActivity"
             android:exported="false"
             android:label="Tutor Sessions"/>
->>>>>>> Stashed changes
+        <activity
+            android:name=".tutor.TutorPendingSessionsActivity"
+            android:exported="false"
+            android:label="Pending Session Requests"/>
+        <activity
+            android:name=".tutor.TutorPendingRequestsActivity"
+            android:exported="false"
+            android:label="Pending Requests"/>
+        <activity
+            android:name=".student.StudentTutorListActivity"
+            android:exported="false"
+            android:label="Tutors"/>
+        <activity
+            android:name=".student.StudentSessionsActivity"
+            android:exported="false"
+            android:label="My Sessions"/>
 
     </application>
 </manifest>

@@ -43,8 +43,6 @@ public class WelcomeTutorActivity extends AppCompatActivity {
             i.putExtra("email", tutorEmail);
             startActivity(i);
         });
-<<<<<<< Updated upstream
-=======
 
         Button btnTutorSessions = findViewById(R.id.btnTutorSessions);
         if (btnTutorSessions != null) {
@@ -55,6 +53,5 @@ public class WelcomeTutorActivity extends AppCompatActivity {
                 startActivity(i);
             });
         }
->>>>>>> Stashed changes
     }
 }

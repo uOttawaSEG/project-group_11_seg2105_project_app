@@ -9,9 +9,19 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import com.example.group_11_project_app_seg2105.sessions.SessionEvents;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.LinkedHashSet;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String TAG = "DB";
@@ -245,14 +255,44 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return out;
     }
 
-<<<<<<< Updated upstream
-=======
+    public SessionRequest getSessionRequestById(long id) {
+        Cursor c = getReadableDatabase().rawQuery(
+                "SELECT id, student_email, tutor_email, date, start, end, status FROM session_requests WHERE id=? LIMIT 1",
+                new String[]{String.valueOf(id)});
+        try {
+            if (!c.moveToFirst()) return null;
+            return new SessionRequest(
+                    c.getLong(0), c.getString(1), c.getString(2),
+                    c.getString(3), c.getString(4), c.getString(5), c.getString(6));
+        } finally {
+            c.close();
+        }
+    }
+
     public List<SessionRequest> getAllSessionsForTutor(String tutorEmail) {
         ArrayList<SessionRequest> out = new ArrayList<>();
         Cursor c = getReadableDatabase().rawQuery(
                 "SELECT id, student_email, tutor_email, date, start, end, status FROM session_requests " +
                         "WHERE tutor_email=? ORDER BY date, start",
                 new String[]{tutorEmail});
+        try {
+            while (c.moveToNext()) {
+                out.add(new SessionRequest(
+                        c.getLong(0), c.getString(1), c.getString(2),
+                        c.getString(3), c.getString(4), c.getString(5), c.getString(6)));
+            }
+        } finally {
+            c.close();
+        }
+        return out;
+    }
+
+    public List<SessionRequest> getAllSessionsForStudent(String studentEmail) {
+        ArrayList<SessionRequest> out = new ArrayList<>();
+        Cursor c = getReadableDatabase().rawQuery(
+                "SELECT id, student_email, tutor_email, date, start, end, status FROM session_requests " +
+                        "WHERE student_email=? ORDER BY date, start",
+                new String[]{studentEmail});
         try {
             while (c.moveToNext()) {
                 out.add(new SessionRequest(
@@ -316,11 +356,49 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return map;
     }
 
->>>>>>> Stashed changes
+    public CancelResult cancelSession(long sessionId, @Nullable String studentEmail) {
+        SessionRequest session = getSessionRequestById(sessionId);
+        if (session == null) return new CancelResult(false, "Session not found");
+        if (studentEmail != null && session.studentEmail != null && !studentEmail.equals(session.studentEmail)) {
+            return new CancelResult(false, "Session not found");
+        }
+
+        String status = session.status != null ? session.status.toUpperCase() : "";
+        if ("CANCELLED".equals(status)) return new CancelResult(false, "Already cancelled");
+        if (!"PENDING".equals(status) && !"APPROVED".equals(status)) {
+            return new CancelResult(false, "Cannot cancel this session");
+        }
+
+        if ("APPROVED".equals(status)) {
+            long startMillis = toStartMillis(session);
+            if (startMillis <= 0L) return new CancelResult(false, "Invalid session time");
+            long diff = startMillis - System.currentTimeMillis();
+            if (diff <= 86_400_000L) {
+                return new CancelResult(false, "Cannot cancel within 24 hours of start");
+            }
+        }
+
+        updateSessionRequestStatus(sessionId, "CANCELLED");
+        SessionEvents.emitStatusChanged(sessionId, "CANCELLED");
+        return new CancelResult(true, "Cancelled");
+    }
+
     public void updateSessionRequestStatus(long id, String status) {
         ContentValues cv = new ContentValues();
         cv.put("status", status);
         getWritableDatabase().update("session_requests", cv, "id=?", new String[]{String.valueOf(id)});
+    }
+
+    private long toStartMillis(SessionRequest session) {
+        if (session == null || session.date == null || session.start == null) return -1;
+        try {
+            LocalDate d = LocalDate.parse(session.date);
+            LocalTime t = LocalTime.parse(session.start);
+            LocalDateTime dt = LocalDateTime.of(d, t);
+            return dt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        } catch (Exception e) {
+            return -1;
+        }
     }
 
     public boolean createTutorWithProfile(String email, String password, String first, String last, String phone, String degree, Collection<String> courses) {
@@ -598,5 +676,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         boolean exists = c.moveToFirst();
         c.close();
         return exists;
+    }
+
+    public static final class CancelResult {
+        public final boolean success;
+        public final String message;
+
+        public CancelResult(boolean success, String message) {
+            this.success = success;
+            this.message = message;
+        }
     }
 }
