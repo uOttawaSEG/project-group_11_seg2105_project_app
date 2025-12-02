@@ -1,47 +1,62 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:padding="14dp"
-    android:background="#18212C"
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="10dp">
+    android:layout_margin="8dp"
+    card_view:cardUseCompatPadding="true"
+    card_view:cardCornerRadius="10dp">
 
-    <TextView
-        android:id="@+id/textStudent"
-        android:text="student@uottawa.ca"
-        android:textColor="#FFFFFF"
-        android:textSize="16sp"/>
-
-    <TextView
-        android:id="@+id/textDate"
-        android:text="2025-01-01"
-        android:textColor="#AAAAAA"
-        android:textSize="14sp"/>
-
-    <TextView
-        android:id="@+id/textTime"
-        android:text="12:00 - 12:30"
-        android:textColor="#AAAAAA"
-        android:textSize="14sp"
-        android:layout_marginBottom="8dp"/>
-
-    <LinearLayout
-        android:orientation="horizontal"
-        android:gravity="end"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/textStudent"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/btnApprove"
+            android:ellipsize="end"
+            android:maxLines="1"/>
+
+        <TextView
+            android:id="@+id/textDate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@id/textStudent"
+            app:layout_constraintStart_toStartOf="parent"/>
+
+        <TextView
+            android:id="@+id/textTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@id/textStudent"
+            app:layout_constraintStart_toEndOf="@id/textDate"
+            app:layout_constraintBaseline_toBaselineOf="@id/textDate"
+            android:layout_marginStart="12dp"/>
 
         <Button
             android:id="@+id/btnApprove"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:text="Approve"
-            android:backgroundTint="#1DB954"
-            android:textColor="#FFF"/>
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/btnReject"
+            android:layout_marginEnd="8dp"/>
 
         <Button
             android:id="@+id/btnReject"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:text="Reject"
-            android:layout_marginStart="10dp"
-            android:backgroundTint="#D32F2F"
-            android:textColor="#FFF"/>
-    </LinearLayout>
-</LinearLayout>
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.cardview.widget.CardView>

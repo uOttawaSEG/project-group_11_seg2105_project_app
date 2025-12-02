@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.LinkedHashSet;
 
+
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String TAG = "DB";
 
@@ -47,11 +48,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(DatabaseContract.TutorAvailability.CREATE);
         db.execSQL(DatabaseContract.TutorAvailability.INDEX_TUTOR_DATE);
 
+        // Add this ↓↓↓
+        db.execSQL(DatabaseContract.SessionRequests.CREATE);
+
         seedDefaults(db);
         seedPart4Rejected(db);
         ensureAdminApproved(db);
     }
-
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         if (oldVersion < 2) db.execSQL(DatabaseContract.StudentProfiles.CREATE);
@@ -71,6 +74,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             db.execSQL(DatabaseContract.TutorAvailability.CREATE);
             db.execSQL(DatabaseContract.TutorAvailability.INDEX_TUTOR_DATE);
         }
+
+        if (oldVersion < 9) {
+            db.execSQL(DatabaseContract.SessionRequests.CREATE);
+        }
+
         ensureAdminApproved(db);
     }
 
@@ -81,9 +89,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     private void seedDefaults(SQLiteDatabase db) {
+
         insertUser(db, "admin@uottawa.ca", "admin123", "admin");
         insertUser(db, "student@uottawa.ca", "pass123", "student");
-        insertUser(db, "tutor@uottawa.ca", "teach123", "com/example/group_11_project_app_seg2105/tutor");
+        insertUser(db, "tutor@uottawa.ca", "teach123", "tutor");
+
 
         ContentValues studentProfile = new ContentValues();
         studentProfile.put(DatabaseContract.StudentProfiles.EMAIL, "student@uottawa.ca");
@@ -243,15 +253,37 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public List<SessionRequest> getPendingSessionRequests(String tutorEmail) {
         ArrayList<SessionRequest> out = new ArrayList<>();
         Cursor c = getReadableDatabase().rawQuery(
-                "SELECT id, student_email, tutor_email, date, start, end, status FROM session_requests " +
-                        "WHERE tutor_email=? AND status='PENDING' ORDER BY date, start",
-                new String[]{tutorEmail});
-        while (c.moveToNext()) {
-            out.add(new SessionRequest(
-                    c.getLong(0), c.getString(1), c.getString(2),
-                    c.getString(3), c.getString(4), c.getString(5), c.getString(6)));
+                "SELECT " +
+                        DatabaseContract.SessionRequests.ID + ", " +
+                        DatabaseContract.SessionRequests.STUDENT_EMAIL + ", " +
+                        DatabaseContract.SessionRequests.TUTOR_EMAIL + ", " +
+                        DatabaseContract.SessionRequests.DATE + ", " +
+                        DatabaseContract.SessionRequests.START + ", " +
+                        DatabaseContract.SessionRequests.END + ", " +
+                        DatabaseContract.SessionRequests.STATUS +
+                        " FROM " + DatabaseContract.SessionRequests.TABLE +
+                        " WHERE " + DatabaseContract.SessionRequests.TUTOR_EMAIL + "=? " +
+                        "AND " + DatabaseContract.SessionRequests.STATUS + "='PENDING' " +
+                        "ORDER BY " + DatabaseContract.SessionRequests.DATE + ", " +
+                        DatabaseContract.SessionRequests.START,
+                new String[]{tutorEmail}
+        );
+        try {
+            while (c.moveToNext()) {
+                out.add(new SessionRequest(
+                        c.getLong(0),   // id
+                        0L,             // slotId unknown here -> 0
+                        c.getString(1), // student_email
+                        c.getString(2), // tutor_email
+                        c.getString(3), // date
+                        c.getString(4), // start_time
+                        c.getString(5), // end_time
+                        c.getString(6)  // status
+                ));
+            }
+        } finally {
+            c.close();
         }
-        c.close();
         return out;
     }
 
@@ -272,14 +304,32 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public List<SessionRequest> getAllSessionsForTutor(String tutorEmail) {
         ArrayList<SessionRequest> out = new ArrayList<>();
         Cursor c = getReadableDatabase().rawQuery(
-                "SELECT id, student_email, tutor_email, date, start, end, status FROM session_requests " +
-                        "WHERE tutor_email=? ORDER BY date, start",
-                new String[]{tutorEmail});
+                "SELECT " +
+                        DatabaseContract.SessionRequests.ID + ", " +
+                        DatabaseContract.SessionRequests.STUDENT_EMAIL + ", " +
+                        DatabaseContract.SessionRequests.TUTOR_EMAIL + ", " +
+                        DatabaseContract.SessionRequests.DATE + ", " +
+                        DatabaseContract.SessionRequests.START + ", " +
+                        DatabaseContract.SessionRequests.END + ", " +
+                        DatabaseContract.SessionRequests.STATUS +
+                        " FROM " + DatabaseContract.SessionRequests.TABLE +
+                        " WHERE " + DatabaseContract.SessionRequests.TUTOR_EMAIL + "=? " +
+                        "ORDER BY " + DatabaseContract.SessionRequests.DATE + ", " +
+                        DatabaseContract.SessionRequests.START,
+                new String[]{tutorEmail}
+        );
         try {
             while (c.moveToNext()) {
                 out.add(new SessionRequest(
-                        c.getLong(0), c.getString(1), c.getString(2),
-                        c.getString(3), c.getString(4), c.getString(5), c.getString(6)));
+                        c.getLong(0),
+                        0L,
+                        c.getString(1),
+                        c.getString(2),
+                        c.getString(3),
+                        c.getString(4),
+                        c.getString(5),
+                        c.getString(6)
+                ));
             }
         } finally {
             c.close();
@@ -304,6 +354,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
         return out;
     }
+
 
     public Map<String, StudentProfile> getStudentProfilesByEmails(Collection<String> emails) {
         Map<String, StudentProfile> map = new HashMap<>();
@@ -355,7 +406,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
         return map;
     }
-
     public CancelResult cancelSession(long sessionId, @Nullable String studentEmail) {
         SessionRequest session = getSessionRequestById(sessionId);
         if (session == null) return new CancelResult(false, "Session not found");
@@ -385,8 +435,154 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public void updateSessionRequestStatus(long id, String status) {
         ContentValues cv = new ContentValues();
-        cv.put("status", status);
-        getWritableDatabase().update("session_requests", cv, "id=?", new String[]{String.valueOf(id)});
+        cv.put(DatabaseContract.SessionRequests.STATUS, status);
+        getWritableDatabase().update(
+                DatabaseContract.SessionRequests.TABLE,
+                cv,
+                DatabaseContract.SessionRequests.ID + "=?",
+                new String[]{String.valueOf(id)}
+        );
+    }
+
+
+    public long insertSessionRequest(String studentEmail, String tutorEmail,
+                                     String date, String start, String end, String status) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put(DatabaseContract.SessionRequests.STUDENT_EMAIL, studentEmail);
+        cv.put(DatabaseContract.SessionRequests.TUTOR_EMAIL, tutorEmail);
+        cv.put(DatabaseContract.SessionRequests.DATE, date);
+        cv.put(DatabaseContract.SessionRequests.START, start); // start_time
+        cv.put(DatabaseContract.SessionRequests.END, end);     // end_time
+        cv.put(DatabaseContract.SessionRequests.STATUS, status);
+
+        return db.insert(DatabaseContract.SessionRequests.TABLE, null, cv);
+    }
+
+
+    public List<SessionRequest> getSessionsForStudent(String studentEmail) {
+        ArrayList<SessionRequest> out = new ArrayList<>();
+
+        Cursor c = getReadableDatabase().rawQuery(
+                "SELECT " +
+                        DatabaseContract.SessionRequests.ID + ", " +
+                        DatabaseContract.SessionRequests.STUDENT_EMAIL + ", " +
+                        DatabaseContract.SessionRequests.TUTOR_EMAIL + ", " +
+                        DatabaseContract.SessionRequests.DATE + ", " +
+                        DatabaseContract.SessionRequests.START + ", " +
+                        DatabaseContract.SessionRequests.END + ", " +
+                        DatabaseContract.SessionRequests.STATUS +
+                        " FROM " + DatabaseContract.SessionRequests.TABLE +
+                        " WHERE " + DatabaseContract.SessionRequests.STUDENT_EMAIL + "=? " +
+                        "ORDER BY " + DatabaseContract.SessionRequests.DATE + " DESC, " +
+                        DatabaseContract.SessionRequests.START + " DESC",
+                new String[]{studentEmail}
+        );
+
+        try {
+            while (c.moveToNext()) {
+                out.add(new SessionRequest(
+                        c.getLong(0),
+                        0L,
+                        c.getString(1),
+                        c.getString(2),
+                        c.getString(3),
+                        c.getString(4),
+                        c.getString(5),
+                        c.getString(6)
+                ));
+            }
+        } finally {
+            c.close();
+        }
+        return out;
+    }
+
+
+    @Nullable
+    public AvailabilitySlot getAvailabilitySlotById(long id) {
+        Cursor c = getReadableDatabase().rawQuery(
+                "SELECT " +
+                        DatabaseContract.TutorAvailability.ID + ", " +
+                        DatabaseContract.TutorAvailability.TUTOR_EMAIL + ", " +
+                        DatabaseContract.TutorAvailability.DATE + ", " +
+                        DatabaseContract.TutorAvailability.START + ", " +
+                        DatabaseContract.TutorAvailability.END + ", " +
+                        DatabaseContract.TutorAvailability.AUTO_APPROVE +
+                        " FROM " + DatabaseContract.TutorAvailability.TABLE +
+                        " WHERE " + DatabaseContract.TutorAvailability.ID + "=?",
+                new String[]{String.valueOf(id)}
+        );
+        try {
+            if (!c.moveToFirst()) return null;
+            return new AvailabilitySlot(
+                    c.getLong(0),
+                    c.getString(1),
+                    c.getString(2),
+                    c.getString(3),
+                    c.getString(4),
+                    c.getInt(5) == 1
+            );
+        } finally {
+            c.close();
+        }
+    }
+
+    public List<SessionRequest> getRequestsBySlot(long slotId) {
+        ArrayList<SessionRequest> out = new ArrayList<>();
+
+        AvailabilitySlot slot = getAvailabilitySlotById(slotId);
+        if (slot == null) {
+            return out; // no such slot -> no requests
+        }
+
+        Cursor c = getReadableDatabase().rawQuery(
+                "SELECT id, student_email, tutor_email, date, start, end, status " +
+                        "FROM session_requests " +
+                        "WHERE tutor_email=? AND date=? AND start=? AND end=?",
+                new String[]{
+                        slot.tutorEmail,
+                        slot.date,
+                        slot.start,
+                        slot.end
+                }
+        );
+
+        try {
+            while (c.moveToNext()) {
+                long id = c.getLong(0);
+                String studentEmail = c.getString(1);
+                String tutorEmail = c.getString(2);
+                String date = c.getString(3);
+                String start = c.getString(4);
+                String end = c.getString(5);
+                String status = c.getString(6);
+
+                out.add(new SessionRequest(
+                        id,
+                        slotId,        // link back to this slot
+                        studentEmail,
+                        tutorEmail,
+                        date,
+                        start,
+                        end,
+                        status
+                ));
+            }
+        } finally {
+            c.close();
+        }
+
+        return out;
+    }
+
+    public boolean deleteAvailabilitySlot(long slotId) {
+        int rows = getWritableDatabase().delete(
+                DatabaseContract.TutorAvailability.TABLE,
+                DatabaseContract.TutorAvailability.ID + "=?",
+                new String[]{String.valueOf(slotId)}
+        );
+        return rows == 1;
     }
 
     private long toStartMillis(SessionRequest session) {
@@ -408,7 +604,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             ContentValues userValues = new ContentValues();
             userValues.put(DatabaseContract.Users.EMAIL, email);
             userValues.put(DatabaseContract.Users.PASSWORD, password);
-            userValues.put(DatabaseContract.Users.ROLE, "com/example/group_11_project_app_seg2105/tutor");
+            userValues.put(DatabaseContract.Users.ROLE, "tutor");
             long userResult = db.insertWithOnConflict(DatabaseContract.Users.TABLE, null, userValues, SQLiteDatabase.CONFLICT_IGNORE);
             if (userResult == -1) return false;
 
@@ -677,7 +873,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         c.close();
         return exists;
     }
-
     public static final class CancelResult {
         public final boolean success;
         public final String message;
@@ -687,4 +882,31 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             this.message = message;
         }
     }
-}
+
+    public List<User> getUsersByRole(String role) {
+        ArrayList<User> out = new ArrayList<>();
+        Cursor c = getReadableDatabase().rawQuery(
+                "SELECT u.email, " +
+                        "COALESCE(s.first_name, t.first_name) AS first_name, " +
+                        "COALESCE(s.last_name, t.last_name) AS last_name " +
+                        "FROM users u " +
+                        "LEFT JOIN student_profiles s ON u.email=s.email " +
+                        "LEFT JOIN tutor_profiles t ON u.email=t.email " +
+                        "WHERE u.role=? " +
+                        "ORDER BY first_name, last_name",
+                new String[]{role}
+        );
+        try {
+            while (c.moveToNext()) {
+                out.add(new User(
+                        c.getString(0),      // email
+                        c.getString(1),      // first name
+                        c.getString(2)       // last name
+                ));
+            }
+        } finally {
+            c.close();
+        }
+        return out;
+    }
+

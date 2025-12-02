@@ -15,10 +15,27 @@ public class User {
     public final String program;
     public final String degree;
     public final List<String> courses;
-    public final boolean autoApprove; // <-- NEW FIELD
+    public final boolean autoApprove;
 
-    // Updated constructor with autoApprove
-    public User(String email, String password, String role, String firstName, String lastName, String phone, String program, String degree, List<String> courses, boolean autoApprove) {
+    // Minimal constructor (list screen)
+    public User(String email, String firstName, String lastName) {
+        this.email = Objects.requireNonNull(email);
+        this.password = null;
+        this.role = null;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.phone = null;
+        this.program = null;
+        this.degree = null;
+        this.courses = Collections.emptyList();
+        this.autoApprove = false;
+    }
+
+    // Full constructor with autoApprove
+    public User(String email, String password, String role,
+                String firstName, String lastName,
+                String phone, String program, String degree,
+                List<String> courses, boolean autoApprove) {
         this.email = Objects.requireNonNull(email);
         this.password = password;
         this.role = role;
@@ -27,16 +44,19 @@ public class User {
         this.phone = phone;
         this.program = program;
         this.degree = degree;
-        this.courses = courses == null ? Collections.emptyList() : Collections.unmodifiableList(new ArrayList<>(courses));
+        this.courses = (courses == null)
+                ? Collections.emptyList()
+                : Collections.unmodifiableList(new ArrayList<>(courses));
         this.autoApprove = autoApprove;
     }
 
-    // Constructor compatibility for older code (default autoApprove = false)
-    public User(String email, String password, String role, String firstName, String lastName, String phone, String program, String degree, List<String> courses) {
+    // Backward-compat (defaults autoApprove=false)
+    public User(String email, String password, String role,
+                String firstName, String lastName,
+                String phone, String program, String degree,
+                List<String> courses) {
         this(email, password, role, firstName, lastName, phone, program, degree, courses, false);
     }
-
-    // Existing "with" methods updated to preserve autoApprove
 
     public User withPassword(String value) {
         return new User(email, value, role, firstName, lastName, phone, program, degree, courses, autoApprove);
@@ -46,7 +66,6 @@ public class User {
         return new User(email, password, value, firstName, lastName, phone, program, degree, courses, autoApprove);
     }
 
-    // NEW "builder" method to modify autoApprove safely
     public User withAutoApprove(boolean value) {
         return new User(email, password, role, firstName, lastName, phone, program, degree, courses, value);
     }

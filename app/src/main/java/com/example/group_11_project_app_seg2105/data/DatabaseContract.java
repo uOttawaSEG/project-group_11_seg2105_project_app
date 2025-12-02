@@ -1,7 +1,7 @@
 package com.example.group_11_project_app_seg2105.data;
 
 public final class DatabaseContract {
-    public static final int VERSION = 6;
+    public static final int VERSION = 9;
     public static final String NAME = "otams.db";
 
     private DatabaseContract() {}

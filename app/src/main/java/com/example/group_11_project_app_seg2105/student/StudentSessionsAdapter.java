@@ -22,6 +22,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class StudentSessionsAdapter extends RecyclerView.Adapter<StudentSessionsAdapter.ViewHolder> {
@@ -29,43 +30,60 @@ public class StudentSessionsAdapter extends RecyclerView.Adapter<StudentSessions
     private final Context context;
     private final DatabaseHelper db;
     private final Runnable refreshCallback;
-    private final List<SessionRequest> data = new ArrayList<>();
+    private final List<SessionRequest> list;
 
     public StudentSessionsAdapter(Context context, DatabaseHelper db, Runnable refreshCallback) {
         this.context = context;
         this.db = db;
         this.refreshCallback = refreshCallback;
+        this.list = new ArrayList<>();
     }
 
-    public void setData(List<SessionRequest> list) {
-        data.clear();
-        if (list != null) data.addAll(list);
+    public void setData(List<SessionRequest> data) {
+        list.clear();
+        list.addAll(data);
+        Collections.sort(list, (a, b) -> b.date.compareTo(a.date)); // sort sessions by date
         notifyDataSetChanged();
     }
 
     @NonNull
     @Override
-    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public ViewHolder onCreateViewHolder(
+            @NonNull ViewGroup parent,
+            int viewType
+    ) {
         View v = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_student_session, parent, false);
         return new ViewHolder(v);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ViewHolder h, int position) {
-        SessionRequest r = data.get(position);
+    public void onBindViewHolder(
+            @NonNull ViewHolder h,
+            int position
+    ) {
+        SessionRequest r = list.get(position);
 
-        h.textTutor.setText(r.tutorEmail != null ? r.tutorEmail : "Tutor");
-        h.textDate.setText(r.date != null ? r.date : "");
-        h.textTime.setText(r.start != null && r.end != null ? r.start + " - " + r.end : "");
-        h.textStatus.setText(r.status != null ? r.status : "UNKNOWN");
+        h.txtDate.setText(r.date);
+        h.txtTime.setText(r.start + " - " + r.end);
+        h.txtTutor.setText("Tutor: " + r.tutorEmail);
+        h.txtStatus.setText(r.status);
+
+        // optional color-coding for status
+        if ("APPROVED".equalsIgnoreCase(r.status)) {
+            h.txtStatus.setTextColor(0xFF2E7D32); // green
+        } else if ("PENDING".equalsIgnoreCase(r.status)) {
+            h.txtStatus.setTextColor(0xFFF9A825); // amber
+        } else {
+            h.txtStatus.setTextColor(0xFFD32F2F); // red
+        }
 
         h.btnCancel.setOnClickListener(v -> handleCancel(r, h.getBindingAdapterPosition()));
     }
 
     @Override
     public int getItemCount() {
-        return data.size();
+        return list == null ? 0 : list.size();
     }
 
     private void handleCancel(SessionRequest r, int position) {
@@ -90,8 +108,8 @@ public class StudentSessionsAdapter extends RecyclerView.Adapter<StudentSessions
             return;
         }
 
-        if (position >= 0 && position < data.size()) {
-            data.remove(position);
+        if (position >= 0 && position < list.size()) {
+            list.remove(position);
             notifyItemRemoved(position);
         } else {
             notifyDataSetChanged();
@@ -131,18 +149,15 @@ public class StudentSessionsAdapter extends RecyclerView.Adapter<StudentSessions
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
-        final TextView textTutor;
-        final TextView textDate;
-        final TextView textTime;
-        final TextView textStatus;
-        final Button btnCancel;
+        TextView txtDate, txtTime, txtTutor, txtStatus;
+        Button btnCancel;
 
         ViewHolder(@NonNull View itemView) {
             super(itemView);
-            textTutor = itemView.findViewById(R.id.textTutor);
-            textDate = itemView.findViewById(R.id.textDate);
-            textTime = itemView.findViewById(R.id.textTime);
-            textStatus = itemView.findViewById(R.id.textStatus);
+            txtDate = itemView.findViewById(R.id.txtDate);
+            txtTime = itemView.findViewById(R.id.txtTime);
+            txtTutor = itemView.findViewById(R.id.txtTutor);
+            txtStatus = itemView.findViewById(R.id.txtStatus);
             btnCancel = itemView.findViewById(R.id.btnCancel);
         }
     }

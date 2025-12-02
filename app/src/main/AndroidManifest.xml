@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Permission required for sending email intents -->
+    <!-- Internet permission (needed for database or email intents if used) -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
@@ -16,7 +16,7 @@
         android:theme="@style/Theme.Group_11_Project_App_SEG2105"
         tools:targetApi="31">
 
-        <!-- Login Activity is now launcher -->
+        <!-- Launcher Activity -->
         <activity
             android:name=".LoginActivity"
             android:exported="true">
@@ -43,34 +43,43 @@
         <activity android:name=".MainActivity" android:exported="false" />
 
         <!-- Admin screens -->
-        <activity android:name=".admin.AdminInboxActivity" android:exported="false" />
-        <activity android:name=".admin.RejectedRequestsActivity" android:exported="false" />
+        <activity
+            android:name=".admin.AdminInboxActivity"
+            android:exported="false" />
+        <activity
+            android:name=".admin.RejectedRequestsActivity"
+            android:exported="false" />
 
+        <!-- Tutor screens -->
         <activity
             android:name=".tutor.TutorAvailabilityActivity"
             android:exported="false"
-            android:label="Manage Availability"/>
-
+            android:label="Manage Availability" />
         <activity
             android:name=".tutor.TutorSessionsActivity"
             android:exported="false"
-            android:label="Tutor Sessions"/>
+            android:label="Tutor Sessions" />
         <activity
             android:name=".tutor.TutorPendingSessionsActivity"
             android:exported="false"
-            android:label="Pending Session Requests"/>
+            android:label="Pending Session Requests" />
         <activity
             android:name=".tutor.TutorPendingRequestsActivity"
             android:exported="false"
-            android:label="Pending Requests"/>
+            android:label="Pending Requests" />
+
+        <!-- Student screens -->
         <activity
             android:name=".student.StudentTutorListActivity"
             android:exported="false"
-            android:label="Tutors"/>
+            android:label="Tutors" />
         <activity
             android:name=".student.StudentSessionsActivity"
             android:exported="false"
-            android:label="My Sessions"/>
+            android:label="My Sessions" />
+        <activity android:name=".student.StudentSessionActivity" android:exported="false" />
+        <activity android:name=".student.StudentBookSessionActivity" />
+        <activity android:name=".student.StudentViewSessionsActivity" />
 
     </application>
 </manifest>

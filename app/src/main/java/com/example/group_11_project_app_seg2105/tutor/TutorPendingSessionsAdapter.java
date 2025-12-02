@@ -6,12 +6,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.example.group_11_project_app_seg2105.R;
 import com.example.group_11_project_app_seg2105.data.DatabaseHelper;
 import com.example.group_11_project_app_seg2105.data.SessionRequest;
-import com.example.group_11_project_app_seg2105.sessions.SessionEvents;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,14 +54,12 @@ public class TutorPendingSessionsAdapter extends RecyclerView.Adapter<TutorPendi
 
         h.btnApprove.setOnClickListener(v -> {
             db.updateSessionRequestStatus(r.id, "APPROVED");
-            SessionEvents.emitStatusChanged(r.id, "APPROVED");
-            refreshCallback.run();
+            refreshCallback.run();  // refresh screen
         });
 
         h.btnReject.setOnClickListener(v -> {
             db.updateSessionRequestStatus(r.id, "REJECTED");
-            SessionEvents.emitStatusChanged(r.id, "REJECTED");
-            refreshCallback.run();
+            refreshCallback.run();  // refresh screen
         });
     }
 

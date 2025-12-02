@@ -1,6 +1,7 @@
-package com.example.group_11_project_app_seg2105.student;
+package com.example.group_11_project_app_seg2105.tutor;
 
 import android.os.Bundle;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -22,8 +23,11 @@ public class StudentTutorListActivity extends AppCompatActivity {
         recycler.setLayoutManager(new LinearLayoutManager(this));
 
         DatabaseHelper db = new DatabaseHelper(this);
+
+        // ✅ Get tutors with first + last names if available
         List<User> tutors = db.getUsersByRole("tutor");
 
+        // ✅ Use adapter located in tutor folder
         StudentTutorListAdapter adapter = new StudentTutorListAdapter(this, tutors);
         recycler.setAdapter(adapter);
     }
