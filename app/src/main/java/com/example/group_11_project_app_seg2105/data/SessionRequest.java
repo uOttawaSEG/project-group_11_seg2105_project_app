@@ -9,7 +9,7 @@ public class SessionRequest {
     public final String date;
     public final String start;
     public final String end;
-    public final String status;        // PENDING, APPROVED, REJECTED
+    public final String status;        // PENDING, APPROVED, REJECTED, CANCELLED
 
     public SessionRequest(long id,
                           long slotId,
@@ -19,7 +19,6 @@ public class SessionRequest {
                           String start,
                           String end,
                           String status) {
-
         this.id = id;
         this.slotId = slotId;          // store FK to the availability slot
         this.studentEmail = studentEmail;

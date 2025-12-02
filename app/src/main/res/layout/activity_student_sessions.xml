@@ -67,8 +67,6 @@
             android:textSize="13sp"
             android:textColor="@color/p4_text_secondary"
             android:layout_marginTop="4dp"/>
-
-
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

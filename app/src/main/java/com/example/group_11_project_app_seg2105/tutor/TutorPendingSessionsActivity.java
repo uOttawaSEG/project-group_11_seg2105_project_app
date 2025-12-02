@@ -7,9 +7,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.group_11_project_app_seg2105.R;
 import com.example.group_11_project_app_seg2105.data.DatabaseHelper;
 import com.example.group_11_project_app_seg2105.data.SessionRequest;
+import com.example.group_11_project_app_seg2105.sessions.SessionEvents;
 import java.util.List;
 
-public class TutorPendingSessionsActivity extends AppCompatActivity {
+public class TutorPendingSessionsActivity extends AppCompatActivity implements SessionEvents.Listener {
 
     private DatabaseHelper db;
     private String tutorEmail;
@@ -36,8 +37,25 @@ public class TutorPendingSessionsActivity extends AppCompatActivity {
         refresh();
     }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        SessionEvents.register(this);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        SessionEvents.unregister(this);
+    }
+
     private void refresh() {
         List<SessionRequest> requests = db.getPendingSessionRequests(tutorEmail);
         adapter.setData(requests);
+    }
+
+    @Override
+    public void onSessionStatusChanged(long sessionId, String newStatus) {
+        runOnUiThread(this::refresh);
     }
 }

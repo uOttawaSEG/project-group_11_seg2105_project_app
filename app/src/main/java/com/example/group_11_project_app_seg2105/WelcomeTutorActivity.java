@@ -50,10 +50,13 @@ public class WelcomeTutorActivity extends AppCompatActivity {
         });
 
         Button btnTutorSessions = findViewById(R.id.btnTutorSessions);
-        btnTutorSessions.setOnClickListener(v -> {
-            Intent i = new Intent(this, com.example.group_11_project_app_seg2105.tutor.TutorSessionsActivity.class);
-            i.putExtra("email", tutorEmail);
-            startActivity(i);
-        });
+        if (btnTutorSessions != null) {
+            String finalTutorEmail = tutorEmail;
+            btnTutorSessions.setOnClickListener(v -> {
+                Intent i = new Intent(this, com.example.group_11_project_app_seg2105.tutor.TutorSessionsActivity.class);
+                i.putExtra("email", finalTutorEmail);
+                startActivity(i);
+            });
+        }
     }
 }

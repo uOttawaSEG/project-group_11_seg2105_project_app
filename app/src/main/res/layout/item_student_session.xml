@@ -12,7 +12,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="12dp">
+        android:padding="12dp"
+        android:background="#18212C">
 
         <TextView
             android:id="@+id/txtDate"
@@ -20,21 +21,21 @@
             android:layout_height="wrap_content"
             android:text="2025-01-01"
             android:textStyle="bold"
-            android:textColor="#212121"/>
+            android:textColor="#FFFFFF"/>
 
         <TextView
             android:id="@+id/txtTime"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="10:00 - 10:30"
-            android:textColor="#555555"/>
+            android:textColor="#CCCCCC"/>
 
         <TextView
             android:id="@+id/txtTutor"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Tutor: tutor@uottawa.ca"
-            android:textColor="#555555"
+            android:textColor="#CCCCCC"
             android:layout_marginTop="4dp"/>
 
         <TextView
@@ -43,7 +44,18 @@
             android:layout_height="wrap_content"
             android:text="PENDING"
             android:textStyle="bold"
+            android:textColor="#1DB954"
             android:layout_marginTop="4dp"/>
+
+        <Button
+            android:id="@+id/btnCancel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cancel"
+            android:textAllCaps="false"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="#D32F2F"
+            android:textColor="#FFFFFF" />
 
     </LinearLayout>
 
